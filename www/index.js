@@ -14,9 +14,6 @@ const state = sor.initial_state(force_field);
 let lastCall = 0;
 let cum = 0;
 
-let dirX = 0;
-let dirY = 0;
-
 const renderLoop = (timestamp) => {
   const delta = timestamp - lastCall;
   lastCall = timestamp;
@@ -29,10 +26,7 @@ const renderLoop = (timestamp) => {
         compute_shader,
         copy_shader,
         force_field,
-        dirX,
-        dirY,
-        state,
-        timestamp
+        state
     );
     cum = 0;
   }
@@ -43,17 +37,9 @@ const renderLoop = (timestamp) => {
 let isDown = false;
 let button = 0;
 
-let lastTop = 0;
-let lastLeft = 0;
-
 canvas.addEventListener('pointerdown', ev => {
   isDown = true;
   button = ev.button;
-
-  if (button != 0) {
-    lastLeft = (ev.clientX - boundingRect.left) / boundingRect.width;
-    lastTop = 1 - (ev.clientY - boundingRect.top) / boundingRect.height;
-  }
 });
 
 
@@ -64,11 +50,6 @@ canvas.addEventListener('pointermove', ev => {
     const canvasLeft = (ev.clientX - boundingRect.left) / boundingRect.width;
     const canvasTop = 1 - (ev.clientY - boundingRect.top) / boundingRect.height;
 
-    if (button != 0) {
-      dirX = (canvasLeft - lastLeft) - 0.5;
-      dirY = (canvasTop - lastTop) - 0.5;
-    }
-
     let force = button == 0 ? 1000 : -10000;
 
     force_field.apply_force(canvasTop, canvasLeft, force, 5);
@@ -77,8 +58,6 @@ canvas.addEventListener('pointermove', ev => {
 
 canvas.addEventListener('pointerup', ev => {
   isDown = false;
-  dirX = 0;
-  dirY = 0;
 });
 
 requestAnimationFrame(renderLoop);

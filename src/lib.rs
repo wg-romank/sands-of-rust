@@ -100,12 +100,6 @@ pub fn update_shader() -> Result<gl::Program, JsValue> {
             gl::UniformDescription::new("field", gl::UniformType::Sampler2D),
             gl::UniformDescription::new("external_force", gl::UniformType::Sampler2D),
             gl::UniformDescription::new("field_size", gl::UniformType::Vector2),
-            gl::UniformDescription::new("dx", gl::UniformType::Float),
-            gl::UniformDescription::new("dy", gl::UniformType::Float),
-            gl::UniformDescription::new("dt", gl::UniformType::Float),
-            gl::UniformDescription::new("a", gl::UniformType::Float),
-            gl::UniformDescription::new("decay", gl::UniformType::Float),
-            gl::UniformDescription::new("time", gl::UniformType::Float),
         ],
         vec![
             gl::AttributeDescription::new("vert_position", gl::AttributeType::Vector2),
@@ -150,31 +144,16 @@ pub fn animation_frame(
     update_shader: &gl::Program,
     copy_shader: &gl::Program,
     force_field: &field::Field,
-    // w & h for scaling in case needed
-    force_x: f32, force_y: f32,
     state: &mut gl::GlState,
-    time: f32,
 ) -> Result<(), JsValue> {
-    let canvas = get_canvas().ok_or(JsValue::from_str("Failed to get canvas"))?;
-    let ctx: WebGl = get_ctx("webgl")?;
-
     let uniforms = vec![
         ("field", gl::UniformData::Texture("display")),
         ("external_force", gl::UniformData::Texture("force_field")),
         ("field_size", gl::UniformData::Vector2([force_field.width as f32, force_field.height as f32])),
-        ("dx", gl::UniformData::Scalar(force_field.dx())),
-        ("dy", gl::UniformData::Scalar(force_field.dy())),
-        // computational stability is important here
-        // dt < dx ^ 2 / (2 * a ^ 2)
-        ("dt", gl::UniformData::Scalar(1e-6)),
-        ("a", gl::UniformData::Scalar(1.0)),
-        ("decay", gl::UniformData::Scalar(1e-6)),
-        ("time", gl::UniformData::Scalar(time))
     ].into_iter().collect::<HashMap<_, _>>();
 
     let copy_uniforms = vec![
         ("field", gl::UniformData::Texture("state")),
-        ("force_dir", gl::UniformData::Vector2([force_x, force_y])),
     ].into_iter().collect::<HashMap<_, _>>();
 
     let w = force_field.width as u32;
