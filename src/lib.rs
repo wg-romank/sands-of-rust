@@ -61,7 +61,6 @@ pub fn display_shader() -> Result<gl::Program, JsValue> {
         include_str!("../shaders/display.frag"),
         vec![
             gl::UniformDescription::new("field", gl::UniformType::Sampler2D),
-            gl::UniformDescription::new("force_dir", gl::UniformType::Vector2),
         ],
         vec![
             gl::AttributeDescription::new("vert_position", gl::AttributeType::Vector2),
