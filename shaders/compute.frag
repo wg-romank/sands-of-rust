@@ -41,9 +41,9 @@ int neighborhood(vec2 uv) {
     // need to apply mask based on own coordinates
     // instead of same pattern over whole picture
     // it must use particular parts with respect to current iteration (zero shift, shift x, shift y)
-    vec4 c1 = textureOffset(uv, vec2(0,  0)) + forceOffset(uv, vec2(0,  0));
+    vec4 c1 = textureOffset(uv, vec2( 0, 0)) + forceOffset(uv, vec2( 0, 0));
     vec4 c2 = textureOffset(uv, vec2(-1, 0)) + forceOffset(uv, vec2(-1, 0)); // right
-    vec4 c3 = textureOffset(uv, vec2(0,  1)) + forceOffset(uv, vec2(0,  1)); // down
+    vec4 c3 = textureOffset(uv, vec2( 0, 1)) + forceOffset(uv, vec2( 0, 1)); // down
     vec4 c4 = textureOffset(uv, vec2(-1, 1)) + forceOffset(uv, vec2(-1, 1)); // righ + down
 
     int s1 = encodeCell(c1) * 2 * 2 * 2;
@@ -52,6 +52,10 @@ int neighborhood(vec2 uv) {
     int s4 = encodeCell(c4);
 
     return encodeCell(c1);
+}
+
+int decode_neighborhood(int mask, vec2 uv) {
+  return mask ^ 0x1000;
 }
 
 void main() {
