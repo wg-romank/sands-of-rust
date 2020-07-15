@@ -5,7 +5,7 @@ use web_sys;
 pub struct Field {
     pub width: usize,
     pub height: usize,
-    values: Vec<f32>
+    values: Vec<u32>
 }
 
 fn get_xy(w: usize, h: usize, idx: usize) -> (f32, f32) {
@@ -26,11 +26,11 @@ impl Field {
     pub fn new(w: usize, h: usize) -> Field {
         let width = w;
         let height = h;
-        let values: Vec<f32> = (0..(width * height)).into_iter().map(|idx| {
+        let values: Vec<u32> = (0..(width * height)).into_iter().map(|idx| {
             let (x, y) = get_xy(width, height, idx);
 
             let rad = (x - 0.5).powf(2.) + (y - 0.5).powf(2.);
-            if  rad <= (0.3 as f32).powf(2.0) && rad >= (0.2 as f32).powf(2.0)  { 1000.0 } else { 0.0 }
+            if  rad <= (0.3 as f32).powf(2.0) && rad >= (0.2 as f32).powf(2.0)  { 256 * 256 * 256 } else { 0 }
         }).collect();
 
         Field { width, height, values }
@@ -39,11 +39,11 @@ impl Field {
     pub fn new_empty(w: usize, h: usize, value: f32) -> Field {
         let width = w;
         let height = h;
-        let values: Vec<f32> = (0..(width * height)).into_iter().map(|_idx| { value }).collect();
+        let values: Vec<u32> = (0..(width * height)).into_iter().map(|_idx| { value as u32 }).collect();
         Field { width, height, values }
     }
 
-    pub fn apply_force(&mut self, x: f32, y: f32, value: f32, radius: usize) {
+    pub fn apply_force(&mut self, x: f32, y: f32, value: u32, radius: usize) {
         let (row, col) = self.get_rc_from_xy(x, y);
 
         for i in 0..(2 * radius) {
@@ -56,7 +56,7 @@ impl Field {
 
                 let idx = self.get_idx(r, c);
                 if idx > 0 && idx < self.width * self.height {
-                    self.values[idx] += value;
+                    self.values[idx] = value;
                 }
             }
         }
@@ -66,10 +66,10 @@ impl Field {
         let (row, col) = self.get_rc_from_xy(x, y);
         let idx = self.get_idx(row, col);
 
-        if self.values[idx] != 0.0 {
-            self.values[idx] = 0.0
+        if self.values[idx] != 0 {
+            self.values[idx] = 0
         } else {
-            self.values[idx] = 1.0;
+            self.values[idx] = 1;
         }
     } 
 }
@@ -97,7 +97,7 @@ impl Field {
     pub fn bytes(&self) -> Vec<u8> {
         self.values
             .iter()
-            .flat_map(|e: &f32| e.to_le_bytes().to_vec() )
+            .flat_map(|e: &u32| e.to_be_bytes().to_vec() )
             .collect()
     }
 }
@@ -111,7 +111,7 @@ impl fmt::Display for Field {
                 let idx = self.get_idx(i, j);
                 let v = self.values[idx];
 
-                if v == 0.0 {
+                if v == 0 {
                     write!(f, "o")?;
                 } else {
                     write!(f, "x")?;

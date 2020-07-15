@@ -2,13 +2,16 @@ import * as sor from "sands-of-rust";
 
 const canvas = document.getElementById("fluid-2d-canvas");
 const brect = canvas.getBoundingClientRect();
-canvas.setAttribute('width', brect.width);
-canvas.setAttribute('height', brect.height);
+const w = 128;
+const h = 128;
+
+canvas.setAttribute('width', w);
+canvas.setAttribute('height', h);
 
 const display_shader = sor.display_shader();
 const compute_shader = sor.update_shader();
 const copy_shader = sor.copy_shader();
-const force_field = sor.Field.new(brect.width, brect.height);
+const force_field = sor.Field.new(w, h);
 const state = sor.initial_state(force_field);
 
 let lastCall = 0;

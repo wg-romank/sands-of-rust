@@ -1,5 +1,3 @@
-// #version 130
-
 precision highp float;
 
 uniform sampler2D field;
@@ -14,6 +12,12 @@ vec4 textureOffset(vec2 uv, vec2 offset) {
     return texture2D(field, (uv * field_size + offset) / field_size);
 }
 
+vec4 forceOffset(vec2 uv, vec2 offset) {
+    // todo: handle borders?
+    // handling with clamp currently
+    return texture2D(external_force, (uv * field_size + offset) / field_size);
+}
+
 const int EMPTY = 0x0;
 const int SAND = 0x1;
 
@@ -25,30 +29,40 @@ int encodeCell(vec4 contents) {
     }
 }
 
+vec4 decodeCell(int value) {
+    if (value == SAND) {
+      return vec4(1.0, 0.0, 0.0, 1.0);
+    } else {
+      return vec4(0.0, 0.0, 0.0, 1.0);
+    }
+}
+
 int neighborhood(vec2 uv) {
     // need to apply mask based on own coordinates
     // instead of same pattern over whole picture
     // it must use particular parts with respect to current iteration (zero shift, shift x, shift y)
-    int s1 = encodeCell(textureOffset(uv, vec2(0, 0))) << 3;
-    int s2 = encodeCell(textureOffset(uv, vec2(-1, 0))) << 2;
-    int s3 = encodeCell(textureOffset(uv, vec2(0, 1))) << 1;
-    int s4 = encodeCell(textureOffset(uv, vec2(-1, 1)));
+    vec4 c1 = textureOffset(uv, vec2(0,  0)) + forceOffset(uv, vec2(0,  0));
+    vec4 c2 = textureOffset(uv, vec2(-1, 0)) + forceOffset(uv, vec2(-1, 0)); // right
+    vec4 c3 = textureOffset(uv, vec2(0,  1)) + forceOffset(uv, vec2(0,  1)); // down
+    vec4 c4 = textureOffset(uv, vec2(-1, 1)) + forceOffset(uv, vec2(-1, 1)); // righ + down
 
-    return s1 | s2 | s3 | s4;
+    int s1 = encodeCell(c1) * 2 * 2 * 2;
+    int s2 = encodeCell(c2) * 2 * 2;
+    int s3 = encodeCell(c3) * 2;
+    int s4 = encodeCell(c4);
+
+    return encodeCell(c1);
 }
 
 void main() {
     int mask = neighborhood(frag_uv);
 
-    int next_mask = 0;
-    switch(mask) {
-        case 0x1000:
-            next_mask = 0x0010;
-            break;
-        default:
-            next_mask = mask;
-            break;
-    }
+    // int next_value = 0;
+    // if (mask == 0x0001) {
+    //   next_value = 0x0010;
+    // } else {
+    //   next_value = mask;
+    // }
 
     // vec4 u = texture2D(field, frag_uv);
     // // right
@@ -65,7 +79,5 @@ void main() {
 
     // GAME LOOP ITERATION HERE
 
-    float new_u = float(next_mask);
-
-    gl_FragColor = vec4(new_u, new_u, new_u, 1.0);
+    gl_FragColor = decodeCell(mask);
 } 
