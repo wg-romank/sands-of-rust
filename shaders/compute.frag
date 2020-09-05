@@ -55,11 +55,11 @@ int encode(vec4 contents, int position) {
     if (position == 0) {
       return 0x1000;
     } else if (position == 1) {
-      return 0x0100;
+      return 0x100;
     } else if (position == 2) {
-      return 0x0010;
+      return 0x10;
     } else {
-      return 0x0001;
+      return 0x1;
     }
   } else {
     return 0x0;
