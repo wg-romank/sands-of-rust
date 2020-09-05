@@ -121,24 +121,24 @@ int neighborhood(vec2 uv, float time_step) {
   } else if (pointIndex == 1) { // right
     //  1 *
     //  2 3
-    offsetS1 = vec2( 0, 0) + timeOffset(time_step);
-    offsetS2 = vec2( 1, 0) + timeOffset(time_step);
-    offsetS3 = vec2( 0, 1) + timeOffset(time_step);
-    offsetS4 = vec2( 1, 1) + timeOffset(time_step);
+    offsetS1 = vec2( 1, 0) + timeOffset(time_step);
+    offsetS2 = vec2( 0, 0) + timeOffset(time_step);
+    offsetS3 = vec2( 1, 1) + timeOffset(time_step);
+    offsetS4 = vec2( 0, 1) + timeOffset(time_step);
   } else if (pointIndex == 2) { // down
     //  1 2
     //  * 3
-    offsetS1 = vec2( 0, 0) + timeOffset(time_step);
-    offsetS2 = vec2( 0,-1) + timeOffset(time_step);
-    offsetS3 = vec2(-1, 0) + timeOffset(time_step);
-    offsetS4 = vec2(-1,-1) + timeOffset(time_step);
+    offsetS1 = vec2( 0,-1) + timeOffset(time_step);
+    offsetS2 = vec2(-1,-1) + timeOffset(time_step);
+    offsetS3 = vec2( 0, 0) + timeOffset(time_step);
+    offsetS4 = vec2(-1, 0) + timeOffset(time_step);
   } else if (pointIndex == 3) { // down right
     // 1 2
     // 3 *
-    offsetS1 = vec2( 0, 0) + timeOffset(time_step);
-    offsetS2 = vec2( 1, 0) + timeOffset(time_step);
-    offsetS3 = vec2( 0,-1) + timeOffset(time_step);
-    offsetS4 = vec2( 1,-1) + timeOffset(time_step);
+    offsetS1 = vec2( 1,-1) + timeOffset(time_step);
+    offsetS2 = vec2( 0,-1) + timeOffset(time_step);
+    offsetS3 = vec2( 1, 0) + timeOffset(time_step);
+    offsetS4 = vec2( 0, 0) + timeOffset(time_step);
   }
 
   // vec4 c1 = textureOffset(uv, vec2( 0, 0)) + forceOffset(uv, vec2( 0, 0));
