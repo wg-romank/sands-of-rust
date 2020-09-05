@@ -38,6 +38,7 @@ vec4 decodeCell(int value) {
   }
 }
 
+// todo: double-check logic here
 vec2 timeOffset(float time_step) {
   if (mod(time_step, 4.) == 0.) {
     return vec2(0, 0);
