@@ -50,6 +50,20 @@ vec2 timeOffset(float time_step) {
   }
 }
 
+int encode(vec4 contents, int position) {
+  if (contents.x > 0.) {
+    if (position == 0) {
+      return 0x1000;
+    } else if (position == 1) {
+      return 0x0100;
+    } else if (position == 2) {
+      return 0x0010;
+    } else {
+      return 0x0001;
+    }
+  }
+}
+
 int neighborhood(vec2 uv, float time_step) {
   // time goes 0, 1, 2, 3, 0, 1, ...
   // need to apply mask based on own coordinates
@@ -70,16 +84,21 @@ int neighborhood(vec2 uv, float time_step) {
   vec4 c3 = textureOffset(uv, offsetDown);
   vec4 c4 = textureOffset(uv, offsetDownRight);
 
-  int s1 = encodeCell(c1) * 2 * 2 * 2;
-  int s2 = encodeCell(c2) * 2 * 2;
-  int s3 = encodeCell(c3) * 2;
-  int s4 = encodeCell(c4);
+  // bigendinan?
+  // s1 -> 0x1000
+  // s2 -> 0x0100
+  // s3 -> 0x0010
+  // s4 -> 0x0001
+  int s1 = encodeCell(c1);
+  int s2 = encodeCell(c2) * 2;
+  int s3 = encodeCell(c3) * 2 * 2;
+  int s4 = encodeCell(c4) * 2 * 2 * 2;
 
   return s1 + s2 + s3 + s4;
 }
 
 void main() {
-  int mask = neighborhood(frag_uv, 0.0);
+  int mask = neighborhood(frag_uv, time_step);
 
   // int next_value = 0;
   // if (mask == 0x0001) {

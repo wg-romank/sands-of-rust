@@ -99,6 +99,7 @@ pub fn update_shader() -> Result<gl::Program, JsValue> {
             gl::UniformDescription::new("field", gl::UniformType::Sampler2D),
             // gl::UniformDescription::new("external_force", gl::UniformType::Sampler2D),
             gl::UniformDescription::new("field_size", gl::UniformType::Vector2),
+            gl::UniformDescription::new("time_step", gl::UniformType::Float),
         ],
         vec![
             gl::AttributeDescription::new("vert_position", gl::AttributeType::Vector2),
@@ -144,11 +145,13 @@ pub fn animation_frame(
     copy_shader: &gl::Program,
     force_field: &field::Field,
     state: &mut gl::GlState,
+    time_step: f32,
 ) -> Result<(), JsValue> {
     let uniforms = vec![
         ("field", gl::UniformData::Texture("display")),
         ("external_force", gl::UniformData::Texture("force_field")),
         ("field_size", gl::UniformData::Vector2([force_field.width as f32, force_field.height as f32])),
+        ("time_step", gl::UniformData::Scalar(time_step)),
     ].into_iter().collect::<HashMap<_, _>>();
 
     let copy_uniforms = vec![

@@ -16,11 +16,14 @@ const state = sor.initial_state(force_field);
 
 let lastCall = 0;
 let cum = 0;
+let timeStep = 0;
 
 const renderLoop = (timestamp) => {
   const delta = timestamp - lastCall;
   lastCall = timestamp;
   cum += delta;
+  // todo: debug
+  // timeStep += 1;
 
   let fps = 1;
   if (cum > 1000 / fps) {
@@ -29,7 +32,8 @@ const renderLoop = (timestamp) => {
         compute_shader,
         copy_shader,
         force_field,
-        state
+        state,
+        timeStep
     );
     cum = 0;
   }
