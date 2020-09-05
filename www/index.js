@@ -23,7 +23,7 @@ const renderLoop = (timestamp) => {
   lastCall = timestamp;
   cum += delta;
   // todo: debug
-  timeStep += 1;
+  // timeStep += 1;
 
   let fps = 1;
   if (cum > 1000 / fps) {

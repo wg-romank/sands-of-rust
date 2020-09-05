@@ -83,25 +83,73 @@ vec4 decodeNeighborhood(int nh, int position) {
   }
 }
 
+int vertexId(vec2 coord) {
+  float x = mod(coord.x, 2.);
+  float y = mod(coord.y, 2.);
+
+  if (x == .0 && y == .0) {
+    return 0; // focus
+  } else if (y == .0) {
+    return 1; // right
+  } else if (x == .0) {
+    return 2; // down
+  } else {
+    return 3; // down right
+  }
+}
+
 int neighborhood(vec2 uv, float time_step) {
+  int pointIndex = vertexId(uv * field_size);
+
   // time goes 0, 1, 2, 3, 0, 1, ...
   // need to apply mask based on own coordinates
   // instead of same pattern over whole picture
   // it must use particular parts with respect to current iteration (zero shift, shift x, shift y)
-  vec2 offsetFocus = vec2(0, 0) + timeOffset(time_step);
-  vec2 offsetRight = vec2(-1, 0) + timeOffset(time_step);
-  vec2 offsetDown = vec2(0, 1) + timeOffset(time_step);
-  vec2 offsetDownRight = vec2(-1, 1) + timeOffset(time_step);
+
+  vec2 offsetS1 = vec2(0, 0);
+  vec2 offsetS2 = vec2(0, 0);
+  vec2 offsetS3 = vec2(0, 0);
+  vec2 offsetS4 = vec2(0, 0);
+
+  if (pointIndex == 0) { // focus
+    //  * 1
+    //  2 3
+    offsetS1 = vec2( 0, 0) + timeOffset(time_step);
+    offsetS2 = vec2(-1, 0) + timeOffset(time_step);
+    offsetS3 = vec2( 0, 1) + timeOffset(time_step);
+    offsetS4 = vec2(-1, 1) + timeOffset(time_step);
+  } else if (pointIndex == 1) { // right
+    //  1 *
+    //  2 3
+    offsetS1 = vec2( 0, 0) + timeOffset(time_step);
+    offsetS2 = vec2( 1, 0) + timeOffset(time_step);
+    offsetS3 = vec2( 0, 1) + timeOffset(time_step);
+    offsetS4 = vec2( 1, 1) + timeOffset(time_step);
+  } else if (pointIndex == 2) { // down
+    //  1 2
+    //  * 3
+    offsetS1 = vec2( 0, 0) + timeOffset(time_step);
+    offsetS2 = vec2( 0,-1) + timeOffset(time_step);
+    offsetS3 = vec2(-1, 0) + timeOffset(time_step);
+    offsetS4 = vec2(-1,-1) + timeOffset(time_step);
+  } else if (pointIndex == 3) { // down right
+    // 1 2
+    // 3 *
+    offsetS1 = vec2( 0, 0) + timeOffset(time_step);
+    offsetS2 = vec2( 1, 0) + timeOffset(time_step);
+    offsetS3 = vec2( 0,-1) + timeOffset(time_step);
+    offsetS4 = vec2( 1,-1) + timeOffset(time_step);
+  }
 
   // vec4 c1 = textureOffset(uv, vec2( 0, 0)) + forceOffset(uv, vec2( 0, 0));
   // vec4 c2 = textureOffset(uv, vec2(-1, 0)) + forceOffset(uv, vec2(-1, 0)); // right
   // vec4 c3 = textureOffset(uv, vec2( 0, 1)) + forceOffset(uv, vec2( 0, 1)); // down
   // vec4 c4 = textureOffset(uv, vec2(-1, 1)) + forceOffset(uv, vec2(-1, 1)); // righ + down
 
-  vec4 c1 = textureOffset(uv, offsetFocus);
-  vec4 c2 = textureOffset(uv, offsetRight);
-  vec4 c3 = textureOffset(uv, offsetDown);
-  vec4 c4 = textureOffset(uv, offsetDownRight);
+  vec4 c1 = textureOffset(uv, offsetS1);
+  vec4 c2 = textureOffset(uv, offsetS2);
+  vec4 c3 = textureOffset(uv, offsetS3);
+  vec4 c4 = textureOffset(uv, offsetS4);
 
   // bigendinan?
   // s1 -> 0x1000
