@@ -5,14 +5,14 @@ const brect = canvas.getBoundingClientRect();
 const w = 128;
 const h = 128;
 
-canvas.setAttribute('width', w);
-canvas.setAttribute('height', h);
+canvas.setAttribute('width', brect.width);
+canvas.setAttribute('height', brect.height);
 
 const display_shader = sor.display_shader();
 const compute_shader = sor.update_shader();
 const copy_shader = sor.copy_shader();
 const force_field = sor.Field.new(w, h);
-const state = sor.initial_state(force_field);
+const state = sor.initial_state(force_field, w, h);
 
 let lastCall = 0;
 let cum = 0;
