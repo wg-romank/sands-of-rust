@@ -124,29 +124,29 @@ vec4 neighborhood(vec2 uv, float time_step) {
     //  * 1
     //  2 3
     offsetC1 = vec2( 0, 0);
-    offsetC2 = vec2(-1, 0); // right
-    offsetC3 = vec2( 0, 1); // down
-    offsetC4 = vec2(-1, 1); // down right
+    offsetC2 = vec2( 1, 0); // right
+    offsetC3 = vec2( 0,-1); // down
+    offsetC4 = vec2( 1,-1); // down right
   } else if (gridIndex == 1) { // right == c2
     //  1 *
     //  2 3
-    offsetC1 = vec2( 1, 0); // left
+    offsetC1 = vec2(-1, 0); // left
     offsetC2 = vec2( 0, 0);
-    offsetC3 = vec2( 1, 1); // down left
-    offsetC4 = vec2( 0, 1); // down
+    offsetC3 = vec2(-1,-1); // down left
+    offsetC4 = vec2( 0,-1); // down
   } else if (gridIndex == 2) { // down == c3
     //  1 2
     //  * 3
-    offsetC1 = vec2( 0,-1); // up
-    offsetC2 = vec2(-1,-1); // up right
+    offsetC1 = vec2( 0, 1); // up
+    offsetC2 = vec2( 1, 1); // up right
     offsetC3 = vec2( 0, 0);
-    offsetC4 = vec2(-1, 0); // right
+    offsetC4 = vec2( 1, 0); // right
   } else if (gridIndex == 3) { // down right == c4
     // 1 2
     // 3 *
-    offsetC1 = vec2( 1,-1); // up left
-    offsetC2 = vec2( 0,-1); // up 
-    offsetC3 = vec2( 1, 0); // left
+    offsetC1 = vec2(-1, 1); // up left
+    offsetC2 = vec2( 0, 1); // up 
+    offsetC3 = vec2(-1, 0); // left
     offsetC4 = vec2( 0, 0);
   }
 

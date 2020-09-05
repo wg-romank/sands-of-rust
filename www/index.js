@@ -22,8 +22,6 @@ const renderLoop = (timestamp) => {
   const delta = timestamp - lastCall;
   lastCall = timestamp;
   cum += delta;
-  // todo: debug
-  // timeStep += 1;
 
   let fps = 1;
   if (cum > 1000 / fps) {
@@ -36,6 +34,9 @@ const renderLoop = (timestamp) => {
         timeStep
     );
     cum = 0;
+    timeStep += 1;
+    // todo: debug
+    console.log("Time step ", timeStep);
   }
 
   requestAnimationFrame(renderLoop);
