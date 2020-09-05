@@ -59,37 +59,47 @@ vec4 encode(vec4 contents, int position) {
       return vec4(0, 1, 0, 0);
     } else if (position == 2) {
       return vec4(0, 0, 1, 0);
-    } else {
+    } else if (position == 3) {
       return vec4(0, 0, 0, 1);
+    } else {
+      return vec4(0, 0, 0, 0);
     }
   } else {
     return vec4(0, 0, 0, 0);
   }
 }
 
-int vertexId(vec2 coord) {
+int gridIndex(vec2 coord) {
   float x = mod(coord.x, 2.);
   float y = mod(coord.y, 2.);
 
   if (x == .0 && y == .0) {
+    // * 2
+    // 3 4
     return 0; // focus
   } else if (y == .0) {
+    // 1 *
+    // 3 4
     return 1; // right
   } else if (x == .0) {
+    // 1 2
+    // * 4
     return 2; // down
   } else {
+    // 1 2
+    // 3 *
     return 3; // down right
   }
 }
 
 vec4 vectorId(vec2 coord) {
-  int vid = vertexId(coord);
+  int gid = gridIndex(coord);
 
-  if (vid == 0) {
+  if (gid == 0) {
     return vec4(1, 0, 0, 0);
-  } else if (vid == 1) {
+  } else if (gid == 1) {
     return vec4(0, 1, 0, 0);
-  } else if (vid == 2) {
+  } else if (gid == 2) {
     return vec4(0, 0, 1, 0);
   } else {
     return vec4(0, 0, 0, 1);
@@ -97,47 +107,47 @@ vec4 vectorId(vec2 coord) {
 }
 
 vec4 neighborhood(vec2 uv, float time_step) {
-  int pointIndex = vertexId(uv * field_size);
+  int gridIndex = gridIndex(uv * field_size);
 
   // time goes 0, 1, 2, 3, 0, 1, ...
   // need to apply mask based on own coordinates
   // instead of same pattern over whole picture
   // it must use particular parts with respect to current iteration (zero shift, shift x, shift y)
 
-  vec2 offsetS1 = vec2(0, 0);
-  vec2 offsetS2 = vec2(0, 0);
-  vec2 offsetS3 = vec2(0, 0);
-  vec2 offsetS4 = vec2(0, 0);
+  vec2 offsetC1 = vec2(0, 0);
+  vec2 offsetC2 = vec2(0, 0);
+  vec2 offsetC3 = vec2(0, 0);
+  vec2 offsetC4 = vec2(0, 0);
 
   // todo: time-based shifting
-  if (pointIndex == 0) { // focus == c1
+  if (gridIndex == 0) { // focus == c1
     //  * 1
     //  2 3
-    offsetS1 = vec2( 0, 0) + timeOffset(time_step);
-    offsetS2 = vec2(-1, 0) + timeOffset(time_step);
-    offsetS3 = vec2( 0, 1) + timeOffset(time_step);
-    offsetS4 = vec2(-1, 1) + timeOffset(time_step);
-  } else if (pointIndex == 1) { // right == c2
+    offsetC1 = vec2( 0, 0);
+    offsetC2 = vec2(-1, 0);
+    offsetC3 = vec2( 0, 1);
+    offsetC4 = vec2(-1, 1);
+  } else if (gridIndex == 1) { // right == c2
     //  1 *
     //  2 3
-    offsetS1 = vec2( 1, 0) + timeOffset(time_step);
-    offsetS2 = vec2( 0, 0) + timeOffset(time_step);
-    offsetS3 = vec2( 1, 1) + timeOffset(time_step);
-    offsetS4 = vec2( 0, 1) + timeOffset(time_step);
-  } else if (pointIndex == 2) { // down == c3
+    offsetC1 = vec2( 1, 0);
+    offsetC2 = vec2( 0, 0);
+    offsetC3 = vec2( 1, 1);
+    offsetC4 = vec2( 0, 1);
+  } else if (gridIndex == 2) { // down == c3
     //  1 2
     //  * 3
-    offsetS1 = vec2( 0,-1) + timeOffset(time_step);
-    offsetS2 = vec2(-1,-1) + timeOffset(time_step);
-    offsetS3 = vec2( 0, 0) + timeOffset(time_step);
-    offsetS4 = vec2(-1, 0) + timeOffset(time_step);
-  } else if (pointIndex == 3) { // down right == c4
+    offsetC1 = vec2( 0,-1);
+    offsetC2 = vec2(-1,-1);
+    offsetC3 = vec2( 0, 0);
+    offsetC4 = vec2(-1, 0);
+  } else if (gridIndex == 3) { // down right == c4
     // 1 2
     // 3 *
-    offsetS1 = vec2( 1,-1) + timeOffset(time_step);
-    offsetS2 = vec2( 0,-1) + timeOffset(time_step);
-    offsetS3 = vec2( 1, 0) + timeOffset(time_step);
-    offsetS4 = vec2( 0, 0) + timeOffset(time_step);
+    offsetC1 = vec2( 1,-1);
+    offsetC2 = vec2( 0,-1);
+    offsetC3 = vec2( 1, 0);
+    offsetC4 = vec2( 0, 0);
   }
 
   // vec4 c1 = textureOffset(uv, vec2( 0, 0)) + forceOffset(uv, vec2( 0, 0));
@@ -148,11 +158,11 @@ vec4 neighborhood(vec2 uv, float time_step) {
 
   // c1 c2
   // c3 c4
-
-  vec4 c1 = textureOffset(uv, offsetS1);
-  vec4 c2 = textureOffset(uv, offsetS2);
-  vec4 c3 = textureOffset(uv, offsetS3);
-  vec4 c4 = textureOffset(uv, offsetS4);
+ 
+  vec4 c1 = textureOffset(uv, offsetC1 + timeOffset(time_step));
+  vec4 c2 = textureOffset(uv, offsetC2 + timeOffset(time_step));
+  vec4 c3 = textureOffset(uv, offsetC3 + timeOffset(time_step));
+  vec4 c4 = textureOffset(uv, offsetC4 + timeOffset(time_step));
 
   return encode(c1, 0) + encode(c2, 1) + encode(c3, 2) + encode(c4, 3);
 }
