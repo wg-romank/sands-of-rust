@@ -68,11 +68,11 @@ int encode(vec4 contents, int position) {
 
 vec4 decodeNeighborhood(int nh, int position) {
   if (
-    nh == 0x1000 ||
-    nh == 0x1100 ||
-    nh == 0x1010 ||
+    nh == 0x0001 ||
+    nh == 0x0011 ||
+    nh == 0x0101 ||
     nh == 0x1001 ||
-    nh == 0x1110 ||
+    nh == 0x0111 ||
     nh == 0x1011 ||
     nh == 0x1101 ||
     nh == 0x1111) {
