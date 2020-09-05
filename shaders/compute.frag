@@ -51,35 +51,19 @@ vec2 timeOffset(float time_step) {
   }
 }
 
-int encode(vec4 contents, int position) {
+vec4 encode(vec4 contents, int position) {
   if (contents.x > 0.) {
     if (position == 0) {
-      return 0x1000;
+      return vec4(1, 0, 0, 0);
     } else if (position == 1) {
-      return 0x100;
+      return vec4(0, 1, 0, 0);
     } else if (position == 2) {
-      return 0x10;
+      return vec4(0, 0, 1, 0);
     } else {
-      return 0x1;
+      return vec4(0, 0, 0, 1);
     }
   } else {
-    return 0x0;
-  }
-}
-
-vec4 decodeNeighborhood(int nh, int position) {
-  if (
-    nh == 0x0001 ||
-    nh == 0x0011 ||
-    nh == 0x0101 ||
-    nh == 0x1001 ||
-    nh == 0x0111 ||
-    nh == 0x1011 ||
-    nh == 0x1101 ||
-    nh == 0x1111) {
-    return decodeCell(SAND);
-  } else {
-    return decodeCell(EMPTY);
+    return vec4(0, 0, 0, 0);
   }
 }
 
@@ -98,7 +82,21 @@ int vertexId(vec2 coord) {
   }
 }
 
-int neighborhood(vec2 uv, float time_step) {
+vec4 vectorId(vec2 coord) {
+  int vid = vertexId(coord);
+
+  if (vid == 0) {
+    return vec4(1, 0, 0, 0);
+  } else if (vid == 1) {
+    return vec4(0, 1, 0, 0);
+  } else if (vid == 2) {
+    return vec4(0, 0, 1, 0);
+  } else {
+    return vec4(0, 0, 0, 1);
+  }
+}
+
+vec4 neighborhood(vec2 uv, float time_step) {
   int pointIndex = vertexId(uv * field_size);
 
   // time goes 0, 1, 2, 3, 0, 1, ...
@@ -111,6 +109,7 @@ int neighborhood(vec2 uv, float time_step) {
   vec2 offsetS3 = vec2(0, 0);
   vec2 offsetS4 = vec2(0, 0);
 
+  // todo: time-based shifting
   if (pointIndex == 0) { // focus
     //  * 1
     //  2 3
@@ -163,38 +162,28 @@ int neighborhood(vec2 uv, float time_step) {
   // int s4 = encodeCell(c4) * 2 * 2 * 2;
 
   // equivalent of above
-  int s1 = encode(c1, 3);
-  int s2 = encode(c2, 2);
-  int s3 = encode(c3, 1);
-  int s4 = encode(c4, 0);
+  vec4 s1 = encode(c1, 0);
+  vec4 s2 = encode(c2, 1);
+  vec4 s3 = encode(c3, 2);
+  vec4 s4 = encode(c4, 3);
 
   return s1 + s2 + s3 + s4;
 }
 
+vec4 decodeNeighborhood(vec2 uv, vec4 nh) {
+  float s = dot(vectorId(uv), nh);
+
+  if (s > 0.0) {
+    return decodeCell(SAND);
+  } else {
+    return decodeCell(EMPTY);
+  }
+}
+
 void main() {
-  int mask = neighborhood(frag_uv, time_step);
+  vec4 mask = neighborhood(frag_uv, time_step);
 
-  // int next_value = 0;
-  // if (mask == 0x0001) {
-  //   next_value = 0x0010;
-  // } else {
-  //   next_value = mask;
-  // }
+  // todo: shift mask
 
-  // vec4 u = texture2D(field, frag_uv);
-  // // right
-  // vec4 u_1_i = textureOffset(frag_uv, vec2(-1, 0));
-  // // left
-  // vec4 u_i_1 = textureOffset(frag_uv, vec2(1, 0));
-
-  // // up
-  // vec4 u_j_1 = textureOffset(frag_uv, vec2(0, -1));
-  // // down
-  // vec4 u_1_j = textureOffset(frag_uv, vec2(0, 1));
-
-  // vec4 F = texture2D(external_force, frag_uv);
-
-  // GAME LOOP ITERATION HERE
-
-  gl_FragColor = decodeNeighborhood(mask, 0);
+  gl_FragColor = decodeNeighborhood(frag_uv, mask);
 } 
