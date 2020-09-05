@@ -17,7 +17,7 @@ macro_rules! log {
 
 pub fn get_canvas() -> Option<web_sys::HtmlCanvasElement> {
     let document = web_sys::window()?.document()?;
-    let canvas = document.get_element_by_id("fluid-2d-canvas")?;
+    let canvas = document.get_element_by_id("sands-of-rust-canvas")?;
 
     canvas.dyn_into::<web_sys::HtmlCanvasElement>().ok()
 }

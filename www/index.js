@@ -1,6 +1,6 @@
 import * as sor from "sands-of-rust";
 
-const canvas = document.getElementById("fluid-2d-canvas");
+const canvas = document.getElementById("sands-of-rust-canvas");
 const brect = canvas.getBoundingClientRect();
 const w = 128;
 const h = 128;
