@@ -97,7 +97,7 @@ pub fn update_shader() -> Result<gl::Program, JsValue> {
         include_str!("../shaders/compute.frag"),
         vec![
             gl::UniformDescription::new("field", gl::UniformType::Sampler2D),
-            gl::UniformDescription::new("external_force", gl::UniformType::Sampler2D),
+            // gl::UniformDescription::new("external_force", gl::UniformType::Sampler2D),
             gl::UniformDescription::new("field_size", gl::UniformType::Vector2),
         ],
         vec![
@@ -124,7 +124,7 @@ pub fn initial_state(
     let packf32 = |v: &[f32]| { v.iter().flat_map(|el| el.to_ne_bytes().to_vec()).collect::<Vec<u8>>() };
     let packu16 = |v: &[u16]| { v.iter().flat_map(|el| el.to_ne_bytes().to_vec()).collect::<Vec<u8>>() };
 
-    let empty_bytes = field::Field::new_empty(w as usize, h as usize, 0.0);
+    let empty_bytes = field::Field::new(w as usize, h as usize);
 
     state
         .vertex_buffer("vert_position", packf32(&vertices).as_slice())?

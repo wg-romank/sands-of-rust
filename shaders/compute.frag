@@ -42,40 +42,44 @@ vec2 timeOffset(float time_step) {
   if (mod(time_step, 4.) == 0.) {
     return vec2(0, 0);
   } else if (mod(time_step, 4.) == 1.) {
-    return vec2(-1, 0);
+    return vec2(-1, 0); // right
   } else if (mod(time_step, 4.) == 2.) {
-    return vec2(0, 1);
+    return vec2(0, 1); // down
   } else { // time_step % 4 == 3
-    return vec2(-1, 1);
+    return vec2(-1, 1); // down, right
   }
 }
 
 int neighborhood(vec2 uv, float time_step) {
+  // time goes 0, 1, 2, 3, 0, 1, ...
   // need to apply mask based on own coordinates
   // instead of same pattern over whole picture
   // it must use particular parts with respect to current iteration (zero shift, shift x, shift y)
   vec2 offsetFocus = vec2(0, 0) + timeOffset(time_step);
-  vec2 offsetRight = 
+  vec2 offsetRight = vec2(-1, 0) + timeOffset(time_step);
+  vec2 offsetDown = vec2(0, 1) + timeOffset(time_step);
+  vec2 offsetDownRight = vec2(-1, 1) + timeOffset(time_step);
 
-  vec4 c1 = textureOffset(uv, vec2( 0, 0)) + forceOffset(uv, vec2( 0, 0));
-  vec4 c2 = textureOffset(uv, vec2(-1, 0)) + forceOffset(uv, vec2(-1, 0)); // right
-  vec4 c3 = textureOffset(uv, vec2( 0, 1)) + forceOffset(uv, vec2( 0, 1)); // down
-  vec4 c4 = textureOffset(uv, vec2(-1, 1)) + forceOffset(uv, vec2(-1, 1)); // righ + down
+  // vec4 c1 = textureOffset(uv, vec2( 0, 0)) + forceOffset(uv, vec2( 0, 0));
+  // vec4 c2 = textureOffset(uv, vec2(-1, 0)) + forceOffset(uv, vec2(-1, 0)); // right
+  // vec4 c3 = textureOffset(uv, vec2( 0, 1)) + forceOffset(uv, vec2( 0, 1)); // down
+  // vec4 c4 = textureOffset(uv, vec2(-1, 1)) + forceOffset(uv, vec2(-1, 1)); // righ + down
+
+  vec4 c1 = textureOffset(uv, offsetFocus);
+  vec4 c2 = textureOffset(uv, offsetRight);
+  vec4 c3 = textureOffset(uv, offsetDown);
+  vec4 c4 = textureOffset(uv, offsetDownRight);
 
   int s1 = encodeCell(c1) * 2 * 2 * 2;
   int s2 = encodeCell(c2) * 2 * 2;
   int s3 = encodeCell(c3) * 2;
   int s4 = encodeCell(c4);
 
-  return encodeCell(c1);
-}
-
-int decode_neighborhood(int mask, vec2 uv) {
-  return mask ^ 0x1000;
+  return s1 + s2 + s3 + s4;
 }
 
 void main() {
-  int mask = neighborhood(frag_uv);
+  int mask = neighborhood(frag_uv, 0.0);
 
   // int next_value = 0;
   // if (mask == 0x0001) {
