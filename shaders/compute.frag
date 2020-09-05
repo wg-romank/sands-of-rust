@@ -167,16 +167,6 @@ vec4 neighborhood(vec2 uv, float time_step) {
   return encode(c1, 0) + encode(c2, 1) + encode(c3, 2) + encode(c4, 3);
 }
 
-vec4 decodeNeighborhood(vec2 uv, vec4 nh) {
-  float s = dot(vectorId(uv), nh);
-
-  if (s > 0.0) {
-    return decodeCell(SAND);
-  } else {
-    return decodeCell(EMPTY);
-  }
-}
-
 vec4 gravityBlackMagic(vec4 nh) {
   // 1 2
   // 3 4
@@ -222,10 +212,19 @@ vec4 gravityBlackMagic(vec4 nh) {
   }
 }
 
+vec4 decodeNeighborhood(vec2 uv, vec4 nh) {
+  float s = dot(vectorId(uv), nh);
+
+  if (s > 0.0) {
+    return decodeCell(SAND);
+  } else {
+    return decodeCell(EMPTY);
+  }
+}
+
 void main() {
   vec4 mask = neighborhood(frag_uv, time_step);
 
-  // todo: shift mask
   vec4 shiftedMask = gravityBlackMagic(mask);
 
   gl_FragColor = decodeNeighborhood(frag_uv, shiftedMask);
