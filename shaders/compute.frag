@@ -61,6 +61,8 @@ int encode(vec4 contents, int position) {
     } else {
       return 0x0001;
     }
+  } else {
+    return 0x0;
   }
 }
 
@@ -89,10 +91,17 @@ int neighborhood(vec2 uv, float time_step) {
   // s2 -> 0x0100
   // s3 -> 0x0010
   // s4 -> 0x0001
-  int s1 = encodeCell(c1);
-  int s2 = encodeCell(c2) * 2;
-  int s3 = encodeCell(c3) * 2 * 2;
-  int s4 = encodeCell(c4) * 2 * 2 * 2;
+
+  // int s1 = encodeCell(c1);
+  // int s2 = encodeCell(c2) * 2;
+  // int s3 = encodeCell(c3) * 2 * 2;
+  // int s4 = encodeCell(c4) * 2 * 2 * 2;
+
+  // equivalent of above
+  int s1 = encode(c1, 3);
+  int s2 = encode(c2, 2);
+  int s3 = encode(c3, 1);
+  int s4 = encode(c4, 0);
 
   return s1 + s2 + s3 + s4;
 }
