@@ -110,28 +110,28 @@ vec4 neighborhood(vec2 uv, float time_step) {
   vec2 offsetS4 = vec2(0, 0);
 
   // todo: time-based shifting
-  if (pointIndex == 0) { // focus
+  if (pointIndex == 0) { // focus == c1
     //  * 1
     //  2 3
     offsetS1 = vec2( 0, 0) + timeOffset(time_step);
     offsetS2 = vec2(-1, 0) + timeOffset(time_step);
     offsetS3 = vec2( 0, 1) + timeOffset(time_step);
     offsetS4 = vec2(-1, 1) + timeOffset(time_step);
-  } else if (pointIndex == 1) { // right
+  } else if (pointIndex == 1) { // right == c2
     //  1 *
     //  2 3
     offsetS1 = vec2( 1, 0) + timeOffset(time_step);
     offsetS2 = vec2( 0, 0) + timeOffset(time_step);
     offsetS3 = vec2( 1, 1) + timeOffset(time_step);
     offsetS4 = vec2( 0, 1) + timeOffset(time_step);
-  } else if (pointIndex == 2) { // down
+  } else if (pointIndex == 2) { // down == c3
     //  1 2
     //  * 3
     offsetS1 = vec2( 0,-1) + timeOffset(time_step);
     offsetS2 = vec2(-1,-1) + timeOffset(time_step);
     offsetS3 = vec2( 0, 0) + timeOffset(time_step);
     offsetS4 = vec2(-1, 0) + timeOffset(time_step);
-  } else if (pointIndex == 3) { // down right
+  } else if (pointIndex == 3) { // down right == c4
     // 1 2
     // 3 *
     offsetS1 = vec2( 1,-1) + timeOffset(time_step);
@@ -145,29 +145,16 @@ vec4 neighborhood(vec2 uv, float time_step) {
   // vec4 c3 = textureOffset(uv, vec2( 0, 1)) + forceOffset(uv, vec2( 0, 1)); // down
   // vec4 c4 = textureOffset(uv, vec2(-1, 1)) + forceOffset(uv, vec2(-1, 1)); // righ + down
 
+
+  // c1 c2
+  // c3 c4
+
   vec4 c1 = textureOffset(uv, offsetS1);
   vec4 c2 = textureOffset(uv, offsetS2);
   vec4 c3 = textureOffset(uv, offsetS3);
   vec4 c4 = textureOffset(uv, offsetS4);
 
-  // bigendinan?
-  // s1 -> 0x1000
-  // s2 -> 0x0100
-  // s3 -> 0x0010
-  // s4 -> 0x0001
-
-  // int s1 = encodeCell(c1);
-  // int s2 = encodeCell(c2) * 2;
-  // int s3 = encodeCell(c3) * 2 * 2;
-  // int s4 = encodeCell(c4) * 2 * 2 * 2;
-
-  // equivalent of above
-  vec4 s1 = encode(c1, 0);
-  vec4 s2 = encode(c2, 1);
-  vec4 s3 = encode(c3, 2);
-  vec4 s4 = encode(c4, 3);
-
-  return s1 + s2 + s3 + s4;
+  return encode(c1, 0) + encode(c2, 1) + encode(c3, 2) + encode(c4, 3);
 }
 
 vec4 decodeNeighborhood(vec2 uv, vec4 nh) {
