@@ -177,10 +177,56 @@ vec4 decodeNeighborhood(vec2 uv, vec4 nh) {
   }
 }
 
+vec4 gravityBlackMagic(vec4 nh) {
+  // 1 2
+  // 3 4
+
+  if (nh == vec4(1, 0, 0, 0)) {
+    // * ~  ~ ~
+    // ~ ~  * ~
+    return vec4(0, 0, 1, 0);
+  } else if (nh == vec4(1, 1, 1, 0)) {
+    // * *  * ~
+    // * ~  * *
+    return vec4(1, 0, 1, 1);
+  } else if (nh == vec4(1, 1, 0, 0)) {
+    // * *  ~ ~
+    // ~ ~  * *
+    return vec4(0, 0, 1, 1);
+  } else if (nh == vec4(0, 1, 1, 0)) {
+    // ~ *  ~ ~
+    // * ~  * *
+    return vec4(0, 0, 1, 1);
+  } else if (nh == vec4(0, 1, 0, 0)) {
+    // ~ *  ~ ~
+    // ~ ~  ~ *
+    return vec4(0, 0, 0, 1);
+  } else if (nh == vec4(1, 1, 0, 1)) {
+    // * *  ~ *
+    // ~ *  * *
+    return vec4(0, 1, 1, 1);
+  } else if (nh == vec4(1, 0, 0, 1)) {
+    // * ~  ~ ~
+    // ~ *  * *
+    return vec4(0, 0, 1, 1);
+  } else if (nh == vec4(1, 0, 1, 0)) {
+    // * ~  ~ ~
+    // * ~  * *
+    return vec4(0, 0, 1, 1);
+  } else if (nh == vec4(0, 1, 0, 1)) {
+    // ~ *  ~ ~
+    // ~ *  * *
+    return vec4(0, 0, 1, 1);
+  } else {
+    return nh;
+  }
+}
+
 void main() {
   vec4 mask = neighborhood(frag_uv, time_step);
 
   // todo: shift mask
+  vec4 shiftedMask = gravityBlackMagic(mask);
 
-  gl_FragColor = decodeNeighborhood(frag_uv, mask);
+  gl_FragColor = decodeNeighborhood(frag_uv, shiftedMask);
 } 
