@@ -26,5 +26,6 @@ vec4 cellColor(int cellType) {
 }
 
 void main() {
-    gl_FragColor = cellColor(encodeCell(texture2D(field, frag_uv)));
+    // gl_FragColor = cellColor(encodeCell(texture2D(field, frag_uv)));
+    gl_FragColor = texture2D(field, frag_uv);
 }

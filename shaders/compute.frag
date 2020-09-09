@@ -226,7 +226,7 @@ vec4 decodeNeighborhood(vec2 uv, vec4 nh) {
 void main() {
   vec4 mask = neighborhood(frag_uv, time_step);
 
-  // vec4 shiftedMask = gravityBlackMagic(mask);
+  vec4 shiftedMask = gravityBlackMagic(mask);
 
   int gid = gridIndex(frag_uv);
 
@@ -240,5 +240,6 @@ void main() {
     gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0);
   }
 
-  // gl_FragColor = decodeNeighborhood(frag_uv, mask);
+
+  // gl_FragColor = decodeNeighborhood(frag_uv, shiftedMask);
 } 
