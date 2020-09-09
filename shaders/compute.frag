@@ -70,8 +70,9 @@ vec4 encode(vec4 contents, int position) {
 }
 
 int gridIndex(vec2 coord) {
-  float x = mod(coord.x, 2.);
-  float y = mod(coord.y, 2.);
+  vec2 coord_scaled = coord * field_size;
+  float x = floor(mod(coord_scaled.x, 2.));
+  float y = floor(mod(coord_scaled.y, 2.));
 
   if (x == .0 && y == .0) {
     // * 2
@@ -123,7 +124,7 @@ vec4 neighborhood(vec2 uv, float time_step) {
   if (gridIndex == 0) { // focus == c1
     //  * 1
     //  2 3
-    offsetC1 = vec2( 0, 0);
+    offsetC1 = vec2( 0, -1);
     offsetC2 = vec2(-1, 0); // right
     offsetC3 = vec2( 0, 1); // down
     offsetC4 = vec2(-1, 1); // down right
@@ -227,5 +228,17 @@ void main() {
 
   // vec4 shiftedMask = gravityBlackMagic(mask);
 
-  gl_FragColor = decodeNeighborhood(frag_uv, mask);
+  int gid = gridIndex(frag_uv);
+
+  if (gid == 0) {
+    gl_FragColor = vec4(1.0, 0.5, 0.5, 1.0);
+  } else if (gid == 1) {
+    gl_FragColor = vec4(0.5, 0, 0.5, 1.0);
+  } else if (gid == 2) {
+    gl_FragColor = vec4(0.5, 1.0, 0.5, 1.0);
+  } else if (gid == 3) {
+    gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0);
+  }
+
+  // gl_FragColor = decodeNeighborhood(frag_uv, mask);
 } 
