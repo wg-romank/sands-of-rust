@@ -34,7 +34,7 @@ const renderLoop = (timestamp) => {
         timeStep
     );
     cum = 0;
-    // timeStep += 1;
+    timeStep += 1;
   }
 
   requestAnimationFrame(renderLoop);

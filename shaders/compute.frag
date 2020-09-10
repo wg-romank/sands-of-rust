@@ -38,19 +38,6 @@ vec4 decodeCell(int value) {
   }
 }
 
-// todo: double-check logic here
-vec2 timeOffset(float time_step) {
-  if (mod(time_step, 4.) == 0.) {
-    return vec2(0, 0);
-  } else if (mod(time_step, 4.) == 1.) {
-    return vec2(-1, 0); // right
-  } else if (mod(time_step, 4.) == 2.) {
-    return vec2(0, 1); // down
-  } else { // time_step % 4 == 3
-    return vec2(-1, 1); // down, right
-  }
-}
-
 vec4 encode(vec4 contents, int position) {
   if (contents.x > 0.) {
     if (position == 0) {
@@ -77,30 +64,67 @@ int gridIndex(vec2 coord) {
   if (x == .0 && y == .0) {
     // * 2
     // 3 4
-    return 0; // focus
+    return 1; // focus
   } else if (y == .0) {
     // 1 *
     // 3 4
-    return 1; // right
+    return 2; // right
   } else if (x == .0) {
     // 1 2
     // * 4
-    return 2; // down
+    return 3; // down
   } else {
     // 1 2
     // 3 *
-    return 3; // down right
+    return 4; // down right
+  }
+}
+
+int timedGridIndex(vec2 coord, float time_step) {
+  int idx = gridIndex(coord);
+  int time_step_int = int(mod(time_step, 3.));
+
+  if (time_step_int == 0) {
+    return idx;
+  } else if (time_step_int == 1) {
+    // 1 -> 2
+    // 2 -> 1
+    // 3 -> 4
+    // 4 -> 3
+    if (idx == 1) {
+      return 2;
+    } else if (idx == 2) {
+      return 1;
+    } else if (idx == 3) {
+      return 4;
+    } else if (idx == 4) {
+      return 3;
+    }
+  } else if (time_step_int == 2) {
+    // 1 -> 3
+    // 2 -> 4
+    // 3 -> 1
+    // 4 -> 2
+    if (idx == 1) {
+      return 3;
+    } else if (idx == 2) {
+      return 4;
+    } else if (idx == 3) {
+      return 1;
+    } else if (idx == 4) {
+      return 2;
+    }
   }
 }
 
 vec4 vectorId(vec2 coord) {
   int gid = gridIndex(coord);
 
-  if (gid == 0) {
+  if (gid == 1) {
     return vec4(1, 0, 0, 0);
-  } else if (gid == 1) {
-    return vec4(0, 1, 0, 0);
   } else if (gid == 2) {
+    return vec4(0, 1, 0, 0);
+  } else if (gid == 3) {
     return vec4(0, 0, 1, 0);
   } else {
     return vec4(0, 0, 0, 1);
@@ -108,7 +132,7 @@ vec4 vectorId(vec2 coord) {
 }
 
 vec4 neighborhood(vec2 uv, float time_step) {
-  int gridIndex = gridIndex(uv * field_size);
+  int gridIndex = timedGridIndex(uv * field_size, time_step);
 
   // time goes 0, 1, 2, 3, 0, 1, ...
   // need to apply mask based on own coordinates
@@ -121,28 +145,28 @@ vec4 neighborhood(vec2 uv, float time_step) {
   vec2 offsetC4 = vec2(0, 0);
 
   // todo: time-based shifting
-  if (gridIndex == 0) { // focus == c1
+  if (gridIndex == 1) { // focus == c1
     //  * 1
     //  2 3
     offsetC1 = vec2( 0, -1);
     offsetC2 = vec2(-1, 0); // right
     offsetC3 = vec2( 0, 1); // down
     offsetC4 = vec2(-1, 1); // down right
-  } else if (gridIndex == 1) { // right == c2
+  } else if (gridIndex == 2) { // right == c2
     //  1 *
     //  2 3
     offsetC1 = vec2( 1, 0); // left
     offsetC2 = vec2( 0, 0);
     offsetC3 = vec2( 1, 1); // down left
     offsetC4 = vec2( 0, 1); // down
-  } else if (gridIndex == 2) { // down == c3
+  } else if (gridIndex == 3) { // down == c3
     //  1 2
     //  * 3
     offsetC1 = vec2( 0,-1); // up
     offsetC2 = vec2(-1,-1); // up right
     offsetC3 = vec2( 0, 0);
     offsetC4 = vec2(-1, 0); // right
-  } else if (gridIndex == 3) { // down right == c4
+  } else if (gridIndex == 4) { // down right == c4
     // 1 2
     // 3 *
     offsetC1 = vec2( 1,-1); // up left
@@ -160,10 +184,10 @@ vec4 neighborhood(vec2 uv, float time_step) {
   // c1 c2
   // c3 c4
  
-  vec4 c1 = textureOffset(uv, offsetC1 + timeOffset(time_step));
-  vec4 c2 = textureOffset(uv, offsetC2 + timeOffset(time_step));
-  vec4 c3 = textureOffset(uv, offsetC3 + timeOffset(time_step));
-  vec4 c4 = textureOffset(uv, offsetC4 + timeOffset(time_step));
+  vec4 c1 = textureOffset(uv, offsetC1);
+  vec4 c2 = textureOffset(uv, offsetC2);
+  vec4 c3 = textureOffset(uv, offsetC3);
+  vec4 c4 = textureOffset(uv, offsetC4);
 
   return encode(c1, 0) + encode(c2, 1) + encode(c3, 2) + encode(c4, 3);
 }
@@ -228,15 +252,15 @@ void main() {
 
   vec4 shiftedMask = gravityBlackMagic(mask);
 
-  int gid = gridIndex(frag_uv);
+  int gid = timedGridIndex(frag_uv, time_step);
 
-  if (gid == 0) {
+  if (gid == 1) {
     gl_FragColor = vec4(1.0, 0.5, 0.5, 1.0);
-  } else if (gid == 1) {
-    gl_FragColor = vec4(0.5, 0, 0.5, 1.0);
   } else if (gid == 2) {
-    gl_FragColor = vec4(0.5, 1.0, 0.5, 1.0);
+    gl_FragColor = vec4(0.5, 0, 0.5, 1.0);
   } else if (gid == 3) {
+    gl_FragColor = vec4(0.5, 1.0, 0.5, 1.0);
+  } else if (gid == 4) {
     gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0);
   }
 
