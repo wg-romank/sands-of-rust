@@ -57,7 +57,8 @@ vec4 encode(vec4 contents, int position) {
 }
 
 int gridIndex(vec2 coord) {
-  vec2 coord_scaled = coord * field_size;
+  vec2 inverted_coord = vec2(coord.x, 1.0 - coord.y);
+  vec2 coord_scaled = inverted_coord * field_size;
   float x = floor(mod(coord_scaled.x, 2.));
   float y = floor(mod(coord_scaled.y, 2.));
 
@@ -255,7 +256,7 @@ void main() {
   int gid = timedGridIndex(frag_uv, time_step);
 
   if (gid == 1) {
-    gl_FragColor = vec4(1.0, 0.5, 0.5, 1.0);
+    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
   } else if (gid == 2) {
     gl_FragColor = vec4(0.5, 0, 0.5, 1.0);
   } else if (gid == 3) {
@@ -265,5 +266,5 @@ void main() {
   }
 
 
-  // gl_FragColor = decodeNeighborhood(frag_uv, shiftedMask);
+  // gl_FragColor = decodeNeighborhood(frag_uv, mask);
 } 
