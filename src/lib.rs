@@ -2,7 +2,6 @@ use wasm_bindgen::prelude::*;
 
 use wasm_bindgen::JsCast;
 use web_sys;
-use web_sys::WebGlRenderingContext as WebGl;
 use std::collections::HashMap;
 
 use glsmrs as gl;
