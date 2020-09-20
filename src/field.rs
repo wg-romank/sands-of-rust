@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-use web_sys;
 
 #[wasm_bindgen]
 pub struct Field {
@@ -13,12 +12,6 @@ fn get_xy(w: usize, h: usize, idx: usize) -> (f32, f32) {
     let col = idx % w;
 
     (row as f32 / h as f32, col as f32 / w as f32)
-}
-
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
 }
 
 #[wasm_bindgen]
