@@ -81,6 +81,7 @@ int gridIndex(vec2 coord) {
   }
 }
 
+// Reference: Cellular Gravity Tromp, Gruau
 int timedGridIndex(vec2 coord, float time_step) {
   int idx = gridIndex(coord);
   int time_step_int = int(mod(time_step, 2.));
@@ -104,23 +105,7 @@ int timedGridIndex(vec2 coord, float time_step) {
   }
 }
 
-vec4 vectorId(vec2 coord) {
-  int gid = gridIndex(coord);
-
-  if (gid == 1) {
-    return vec4(1, 0, 0, 0);
-  } else if (gid == 2) {
-    return vec4(0, 1, 0, 0);
-  } else if (gid == 3) {
-    return vec4(0, 0, 1, 0);
-  } else {
-    return vec4(0, 0, 0, 1);
-  }
-}
-
-vec4 neighborhood(vec2 uv, float time_step) {
-  int gridIndex = timedGridIndex(uv * field_size, time_step);
-
+vec4 neighborhood(vec2 uv, int gid) {
   // time goes 0, 1, 0, 1, ...
   // need to apply mask based on own coordinates
   // instead of same pattern over whole picture
@@ -132,28 +117,28 @@ vec4 neighborhood(vec2 uv, float time_step) {
   vec2 offsetC4 = vec2(0, 0);
 
   // todo: time-based shifting
-  if (gridIndex == 1) { // focus == c1
-    //  * 1
-    //  2 3
-    offsetC1 = vec2( 0, -1);
+  if (gid == 1) { // focus == c1
+    //  * 2
+    //  3 4
+    offsetC1 = vec2( 0, 0);
     offsetC2 = vec2(-1, 0); // right
     offsetC3 = vec2( 0, 1); // down
     offsetC4 = vec2(-1, 1); // down right
-  } else if (gridIndex == 2) { // right == c2
+  } else if (gid == 2) { // right == c2
     //  1 *
-    //  2 3
+    //  3 4
     offsetC1 = vec2( 1, 0); // left
     offsetC2 = vec2( 0, 0);
     offsetC3 = vec2( 1, 1); // down left
     offsetC4 = vec2( 0, 1); // down
-  } else if (gridIndex == 3) { // down == c3
+  } else if (gid == 3) { // down == c3
     //  1 2
     //  * 3
     offsetC1 = vec2( 0,-1); // up
     offsetC2 = vec2(-1,-1); // up right
     offsetC3 = vec2( 0, 0);
     offsetC4 = vec2(-1, 0); // right
-  } else if (gridIndex == 4) { // down right == c4
+  } else if (gid == 4) { // down right == c4
     // 1 2
     // 3 *
     offsetC1 = vec2( 1,-1); // up left
@@ -224,8 +209,20 @@ vec4 gravityBlackMagic(vec4 nh) {
   }
 }
 
-vec4 decodeNeighborhood(vec2 uv, vec4 nh) {
-  float s = dot(vectorId(uv), nh);
+vec4 vectorId(int gid) {
+  if (gid == 1) {
+    return vec4(1, 0, 0, 0);
+  } else if (gid == 2) {
+    return vec4(0, 1, 0, 0);
+  } else if (gid == 3) {
+    return vec4(0, 0, 1, 0);
+  } else {
+    return vec4(0, 0, 0, 1);
+  }
+}
+
+vec4 decodeNeighborhood(int gid, vec4 nh) {
+  float s = dot(vectorId(gid), nh);
 
   if (s > 0.0) {
     return decodeCell(SAND);
@@ -235,22 +232,22 @@ vec4 decodeNeighborhood(vec2 uv, vec4 nh) {
 }
 
 void main() {
-  vec4 mask = neighborhood(frag_uv, time_step);
+  int gid = timedGridIndex(frag_uv * field_size, time_step);
+
+  vec4 mask = neighborhood(frag_uv, gid);
 
   vec4 shiftedMask = gravityBlackMagic(mask);
 
-  int gid = timedGridIndex(frag_uv, time_step);
-
-  if (gid == 1) {
-    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-  } else if (gid == 2) {
-    gl_FragColor = vec4(0.5, 0, 0.5, 1.0);
-  } else if (gid == 3) {
-    gl_FragColor = vec4(0.5, 1.0, 0.5, 1.0);
-  } else if (gid == 4) {
-    gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0);
-  }
+  // if (gid == 1) {
+  //   gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+  // } else if (gid == 2) {
+  //   gl_FragColor = vec4(0.5, 0, 0.5, 1.0);
+  // } else if (gid == 3) {
+  //   gl_FragColor = vec4(0.5, 1.0, 0.5, 1.0);
+  // } else if (gid == 4) {
+  //   gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0);
+  // }
 
 
-  // gl_FragColor = decodeNeighborhood(frag_uv, shiftedMask);
+  gl_FragColor = decodeNeighborhood(gid, shiftedMask);
 } 
