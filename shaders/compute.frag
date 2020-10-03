@@ -83,37 +83,23 @@ int gridIndex(vec2 coord) {
 
 int timedGridIndex(vec2 coord, float time_step) {
   int idx = gridIndex(coord);
-  int time_step_int = int(mod(time_step, 3.));
+  int time_step_int = int(mod(time_step, 2.));
 
   if (time_step_int == 0) {
     return idx;
   } else if (time_step_int == 1) {
-    // 1 -> 2
-    // 2 -> 1
-    // 3 -> 4
-    // 4 -> 3
+    // 1 -> 4
+    // 2 -> 3
+    // 3 -> 2
+    // 4 -> 1
     if (idx == 1) {
-      return 2;
-    } else if (idx == 2) {
-      return 1;
-    } else if (idx == 3) {
       return 4;
-    } else if (idx == 4) {
-      return 3;
-    }
-  } else if (time_step_int == 2) {
-    // 1 -> 3
-    // 2 -> 4
-    // 3 -> 1
-    // 4 -> 2
-    if (idx == 1) {
-      return 3;
     } else if (idx == 2) {
-      return 4;
+      return 3;
     } else if (idx == 3) {
-      return 1;
-    } else if (idx == 4) {
       return 2;
+    } else if (idx == 4) {
+      return 1;
     }
   }
 }
@@ -135,10 +121,10 @@ vec4 vectorId(vec2 coord) {
 vec4 neighborhood(vec2 uv, float time_step) {
   int gridIndex = timedGridIndex(uv * field_size, time_step);
 
-  // time goes 0, 1, 2, 3, 0, 1, ...
+  // time goes 0, 1, 0, 1, ...
   // need to apply mask based on own coordinates
   // instead of same pattern over whole picture
-  // it must use particular parts with respect to current iteration (zero shift, shift x, shift y)
+  // it must use particular parts with respect to current iteration (even grid, odd grid)
 
   vec2 offsetC1 = vec2(0, 0);
   vec2 offsetC2 = vec2(0, 0);
@@ -266,5 +252,5 @@ void main() {
   }
 
 
-  // gl_FragColor = decodeNeighborhood(frag_uv, mask);
+  // gl_FragColor = decodeNeighborhood(frag_uv, shiftedMask);
 } 

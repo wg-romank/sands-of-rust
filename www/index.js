@@ -2,8 +2,8 @@ import * as sor from "sands-of-rust";
 
 const canvas = document.getElementById("sands-of-rust-canvas");
 const brect = canvas.getBoundingClientRect();
-const w = 32;
-const h = 32;
+const w = 2;
+const h = 2;
 
 canvas.setAttribute('width', brect.width);
 canvas.setAttribute('height', brect.height);
