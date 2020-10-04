@@ -107,7 +107,7 @@ impl Field {
         }
     } 
 
-    pub fn step(&mut self) {
+    pub fn step(&mut self, time_step: u32) {
         let w = self.width;
         let h = self.height;
         let mut new_values = self.values.clone();
@@ -115,7 +115,7 @@ impl Field {
             let row = idx / w;
             let col = idx % w;
 
-            let gid = grid_idx(row, col);
+            let gid = grid_idx(row, col, time_step);
 
             let nh = match gid {
                 // * 2
@@ -175,13 +175,26 @@ fn rules(slice: [CellType; 4]) -> [CellType; 4] {
     }
 }
 
-fn grid_idx(i: usize, j: usize) -> u8 {
-    match (i, j) {
+fn grid_idx(i: usize, j: usize, time_step: u32) -> u8 {
+    let step_rounded = time_step % 2;
+    let gid = match (i, j) {
         (0, 0) => 1,
         (1, 0) => 2,
         (0, 1) => 3,
         (1, 1) => 4,
         (_, _) => 255
+    };
+
+    if step_rounded == 0 {
+        return gid;
+    } else {
+        return match gid {
+            1 => 4,
+            4 => 1,
+            2 => 3,
+            3 => 2,
+            o => o,
+        }
     }
 }
 
@@ -250,4 +263,16 @@ fn test_encoding() {
     let field = Field::new(32, 32);
     let field_simple = FieldSimple::new(32, 32);
     assert_eq!(field.bytes(), field_simple.bytes());
+}
+
+#[test]
+fn test_grid_idx() {
+    for i in 0..10 {
+        let gid = grid_idx(0, 0, i);
+        if i % 2 == 0 {
+            assert_eq!(gid, 1);
+        } else {
+            assert_eq!(gid, 4);
+        }
+    }
 }
