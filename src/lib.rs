@@ -121,8 +121,10 @@ pub fn initial_state(
 
     let mut state = gl::GlState::new(&context, gl::Viewport {w: canvas.width(), h: canvas.height()});
 
-    let packf32 = |v: &[f32]| { v.iter().flat_map(|el| el.to_ne_bytes().to_vec()).collect::<Vec<u8>>() };
-    let packu16 = |v: &[u16]| { v.iter().flat_map(|el| el.to_ne_bytes().to_vec()).collect::<Vec<u8>>() };
+    // attribute arrays need to be packed with little-endinan bytes
+    // while texture data is big-endian X_X
+    let packf32 = |v: &[f32]| { v.iter().flat_map(|el| el.to_le_bytes().to_vec()).collect::<Vec<u8>>() };
+    let packu16 = |v: &[u16]| { v.iter().flat_map(|el| el.to_le_bytes().to_vec()).collect::<Vec<u8>>() };
 
     let empty_bytes = field::Field::new(w as usize, h as usize);
 
