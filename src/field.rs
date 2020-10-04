@@ -125,6 +125,11 @@ impl Field {
 
             let shifted = rules(nh);
 
+            use CellType::*;
+            if shifted != [Empty, Empty, Empty, Empty] && shifted != nh {
+                print!("({},{}) {:?} -> {:?}\n", row, col, nh, shifted);
+            }
+
             new_values[idx] = shifted[(gid - 1) as usize];
         }
         self.values = new_values;
