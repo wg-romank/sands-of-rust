@@ -117,6 +117,9 @@ impl Field {
         let mut new_values = self.values.clone();
         for idx in 0..(w * h) {
             // skip some updates?
+            // even grid on one time step
+            // odd grid on another
+            // for each cell determinte if it is on even grid or on odd?
             let row = idx / w;
             let col = idx % w;
 
