@@ -2,7 +2,7 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 #[repr(u32)]
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum CellType {
     Empty = 0,
     Sand = 16777216 // 256 * 256 * 256
@@ -117,21 +117,7 @@ impl Field {
 
             let gid = grid_idx(row, col, time_step);
 
-            let nh = match gid {
-                // * 2
-                // 3 4
-                1 => self.slice((row, col), (row, col + 1), (row + 1, col), (row + 1, col + 1)),
-                // 1 *
-                // 3 4
-                2 => self.slice((row, col - 1), (row, col), (row + 1, col - 1), (row + 1, col)),
-                // 1 2
-                // * 4
-                3 => self.slice((row - 1, col), (row - 1, col + 1), (row, col), (row, col + 1)),
-                // 1 2
-                // 3 *
-                4 => self.slice((row - 1, col - 1), (row - 1, col), (row, col - 1), (row, col)),
-                _ => panic!("OMG"),
-            };
+            let nh = self.encodde_neighborhood(gid, row, col);
 
             let shifted = rules(nh);
 
@@ -199,6 +185,24 @@ fn grid_idx(i: usize, j: usize, time_step: u32) -> u8 {
 }
 
 impl Field {
+    fn encodde_neighborhood(&self, gid: u8, row: usize, col: usize) -> [CellType; 4] {
+        match gid {
+            // * 2
+            // 3 4
+            1 => self.slice((row, col), (row, col + 1), (row + 1, col), (row + 1, col + 1)),
+            // 1 *
+            // 3 4
+            2 => self.slice((row, col - 1), (row, col), (row + 1, col - 1), (row + 1, col)),
+            // 1 2
+            // * 4
+            3 => self.slice((row - 1, col), (row - 1, col + 1), (row, col), (row, col + 1)),
+            // 1 2
+            // 3 *
+            4 => self.slice((row - 1, col - 1), (row - 1, col), (row, col - 1), (row, col)),
+            _ => panic!("OMG"),
+        }
+    }
+
     pub fn slice(&self, i1: (usize, usize), i2: (usize, usize), i3: (usize, usize), i4: (usize, usize)) -> [CellType; 4] {
         [
             self.values[self.get_idx(i1.0, i1.1)],
@@ -275,4 +279,26 @@ fn test_grid_idx() {
             assert_eq!(gid, 4);
         }
     }
+}
+
+#[test]
+fn test_rules_invariant() {
+    use CellType::*;
+
+    let invariant = [Sand, Sand, Sand, Sand];
+    assert_eq!(rules(invariant), invariant);
+}
+
+#[test]
+fn test_encode_nh() {
+    use CellType::*;
+
+    let field = Field::new(32, 32);
+    let row = 0;
+    let col = 0;
+    let gid = grid_idx(row, col, 0);
+
+    assert_eq!(
+        field.encodde_neighborhood(gid, row, col),
+        [Empty, Empty, Empty, Empty]);
 }
