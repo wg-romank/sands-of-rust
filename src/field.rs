@@ -1,10 +1,48 @@
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
+#[repr(u32)]
+#[derive(PartialEq, Clone, Copy)]
+pub enum CellType {
+    Empty = 0,
+    Sand = 16777216 // 256 * 256 * 256
+}
+
+#[wasm_bindgen]
 pub struct Field {
     pub width: usize,
     pub height: usize,
-    values: Vec<u32>
+    values: Vec<CellType>,
+}
+
+#[wasm_bindgen]
+pub struct FieldSimple {
+    pub width: usize,
+    pub height: usize,
+    values: Vec<u32>,
+}
+
+#[wasm_bindgen]
+impl FieldSimple {
+    pub fn new(w: usize, h: usize) -> FieldSimple {
+        let width = w;
+        let height = h;
+        let values = (0..(width * height)).into_iter().map(|idx| {
+            let (x, y) = get_xy(width, height, idx);
+
+            let rad = (x - 0.5).powf(2.) + (y - 0.5).powf(2.);
+            if  rad <= (0.3 as f32).powf(2.0) && rad >= (0.2 as f32).powf(2.0)  { 256 * 256 * 256 } else { 0 }
+        }).collect::<Vec<u32>>();
+
+        FieldSimple { width, height, values }
+    }
+
+    pub fn bytes(&self) -> Vec<u8> {
+        self.values
+            .iter()
+            .flat_map(|e: &u32| e.to_be_bytes().to_vec() )
+            .collect()
+    }
 }
 
 fn get_xy(w: usize, h: usize, idx: usize) -> (f32, f32) {
@@ -19,24 +57,27 @@ impl Field {
     pub fn new(w: usize, h: usize) -> Field {
         let width = w;
         let height = h;
-        let values: Vec<u32> = (0..(width * height)).into_iter().map(|idx| {
+        let values = (0..(width * height)).into_iter().map(|idx| {
             let (x, y) = get_xy(width, height, idx);
 
             let rad = (x - 0.5).powf(2.) + (y - 0.5).powf(2.);
-            if  rad <= (0.3 as f32).powf(2.0) && rad >= (0.2 as f32).powf(2.0)  { 256 * 256 * 256 } else { 0 }
-        }).collect();
+            if  rad <= (0.3 as f32).powf(2.0) && rad >= (0.2 as f32).powf(2.0)  { CellType::Sand } else { CellType::Empty }
+        }).collect::<Vec<CellType>>();
 
         Field { width, height, values }
     }
 
-    pub fn new_empty(w: usize, h: usize, value: f32) -> Field {
+    pub fn new_empty(w: usize, h: usize, value: CellType) -> Field {
         let width = w;
         let height = h;
-        let values: Vec<u32> = (0..(width * height)).into_iter().map(|_idx| { value as u32 }).collect();
+        let values = (0..(width * height))
+            .into_iter()
+            .map(|_idx| value)
+            .collect::<Vec<CellType>>();
         Field { width, height, values }
     }
 
-    pub fn apply_force(&mut self, x: f32, y: f32, value: u32, radius: usize) {
+    pub fn apply_force(&mut self, x: f32, y: f32, value: CellType, radius: usize) {
         let (row, col) = self.get_rc_from_xy(x, y);
 
         for i in 0..(2 * radius) {
@@ -59,12 +100,16 @@ impl Field {
         let (row, col) = self.get_rc_from_xy(x, y);
         let idx = self.get_idx(row, col);
 
-        if self.values[idx] != 0 {
-            self.values[idx] = 0
+        if self.values[idx] != CellType::Empty {
+            self.values[idx] = CellType::Empty
         } else {
-            self.values[idx] = 1;
+            self.values[idx] = CellType::Sand;
         }
     } 
+
+    pub fn step(&mut self) {
+        
+    }
 }
 
 impl Field {
@@ -90,7 +135,7 @@ impl Field {
     pub fn bytes(&self) -> Vec<u8> {
         self.values
             .iter()
-            .flat_map(|e: &u32| e.to_be_bytes().to_vec() )
+            .flat_map(|e: &CellType| (*e as u32).to_be_bytes().to_vec() )
             .collect()
     }
 }
@@ -104,7 +149,7 @@ impl fmt::Display for Field {
                 let idx = self.get_idx(i, j);
                 let v = self.values[idx];
 
-                if v == 0 {
+                if v == CellType::Empty {
                     write!(f, "o")?;
                 } else {
                     write!(f, "x")?;

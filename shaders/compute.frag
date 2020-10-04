@@ -249,5 +249,5 @@ void main() {
   // }
 
 
-  gl_FragColor = decodeNeighborhood(gid, shiftedMask);
+  gl_FragColor = decodeNeighborhood(gid, mask);
 } 
