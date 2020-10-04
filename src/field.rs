@@ -347,12 +347,14 @@ fn test_step() {
 
     print!("field\n{}", field);
 
+    print!("nh (1, 1) {:?}\n", field.encodde_neighborhood(1, 1, 1));
+
     field.step(0);
 
     print!("field\n{}", field);
 
     assert_eq!(
-        field.encodde_neighborhood(1, 0, 0),
+        field.encodde_neighborhood(1, 1, 1),
         [Empty, Empty, Sand, Sand]
     )
 }
