@@ -6,3 +6,6 @@ build: wasm
 
 serve: build
 	cd www && npm run start
+
+test:
+	cargo test

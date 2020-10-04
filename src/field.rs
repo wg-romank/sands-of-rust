@@ -163,8 +163,8 @@ impl fmt::Display for Field {
 }
 
 #[test]
-fn init() {
+fn test_encoding() {
     let field = Field::new(32, 32);
-    print!("{}", field.to_string());
-    // panic!("woah");
+    let field_simple = FieldSimple::new(32, 32);
+    assert_eq!(field.bytes(), field_simple.bytes());
 }
