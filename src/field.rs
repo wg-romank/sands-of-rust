@@ -98,6 +98,10 @@ impl Field {
 
     pub fn toggle(&mut self, x: f32, y: f32) {
         let (row, col) = self.get_rc_from_xy(x, y);
+        self.togglerc(row, col);
+    } 
+
+    pub fn togglerc(&mut self, row: usize, col: usize) {
         let idx = self.get_idx(row, col);
 
         if self.values[idx] != CellType::Empty {
@@ -105,7 +109,7 @@ impl Field {
         } else {
             self.values[idx] = CellType::Sand;
         }
-    } 
+    }
 
     pub fn step(&mut self, time_step: u32) {
         let w = self.width;
@@ -163,12 +167,12 @@ fn rules(slice: [CellType; 4]) -> [CellType; 4] {
 
 fn grid_idx(i: usize, j: usize, time_step: u32) -> u8 {
     let step_rounded = time_step % 2;
-    let gid = match (i, j) {
+    let gid = match (i % 2, j % 2) {
         (0, 0) => 1,
         (1, 0) => 2,
         (0, 1) => 3,
         (1, 1) => 4,
-        (_, _) => 255
+        (_, _) => panic!("Invalid i={} j={}", i, j)
     };
 
     if step_rounded == 0 {
@@ -186,30 +190,40 @@ fn grid_idx(i: usize, j: usize, time_step: u32) -> u8 {
 
 impl Field {
     fn encodde_neighborhood(&self, gid: u8, row: usize, col: usize) -> [CellType; 4] {
+        let (r, c) = (row as i32, col as i32);
         match gid {
             // * 2
             // 3 4
-            1 => self.slice((row, col), (row, col + 1), (row + 1, col), (row + 1, col + 1)),
+            1 => self.slice((r, c), (r, c + 1), (r + 1, c), (r + 1, c + 1)),
             // 1 *
             // 3 4
-            2 => self.slice((row, col - 1), (row, col), (row + 1, col - 1), (row + 1, col)),
+            2 => self.slice((r, c - 1), (r, c), (r + 1, c - 1), (r + 1, c)),
             // 1 2
             // * 4
-            3 => self.slice((row - 1, col), (row - 1, col + 1), (row, col), (row, col + 1)),
+            3 => self.slice((r - 1, c), (r - 1, c + 1), (r, c), (r, c + 1)),
             // 1 2
             // 3 *
-            4 => self.slice((row - 1, col - 1), (row - 1, col), (row, col - 1), (row, col)),
-            _ => panic!("OMG"),
+            4 => self.slice((r - 1, c - 1), (r - 1, c), (r, c - 1), (r, c)),
+            _ => panic!("GID is {}", gid),
         }
     }
 
-    pub fn slice(&self, i1: (usize, usize), i2: (usize, usize), i3: (usize, usize), i4: (usize, usize)) -> [CellType; 4] {
+    pub fn slice(&self, i1: (i32, i32), i2: (i32, i32), i3: (i32, i32), i4: (i32, i32)) -> [CellType; 4] {
         [
-            self.values[self.get_idx(i1.0, i1.1)],
-            self.values[self.get_idx(i2.0, i2.1)],
-            self.values[self.get_idx(i3.0, i3.1)],
-            self.values[self.get_idx(i4.0, i4.1)],
+            self.values[self.get_idx_clamp(i1.0, i1.1)],
+            self.values[self.get_idx_clamp(i2.0, i2.1)],
+            self.values[self.get_idx_clamp(i3.0, i3.1)],
+            self.values[self.get_idx_clamp(i4.0, i4.1)],
         ]
+    }
+
+    pub fn get_idx_clamp(&self, row: i32, col: i32) -> usize {
+        use std::cmp::min;
+        use std::cmp::max;
+        let row_u = min(max(0, row), (self.height - 1) as i32) as usize;
+        let col_u = min(max(0, col), (self.width - 1) as i32) as usize;
+
+        self.get_idx(row_u, col_u)
     }
 
 
@@ -301,4 +315,52 @@ fn test_encode_nh() {
     assert_eq!(
         field.encodde_neighborhood(gid, row, col),
         [Empty, Empty, Empty, Empty]);
+}
+
+#[test]
+fn test_encode_nh_small_field() {
+    use CellType::*;
+
+    let row = 0;
+    let col = 0;
+
+    let mut field = Field::new_empty(2, 2, Sand);
+
+    field.togglerc(row, col);
+    field.togglerc(row + 1, col + 1);
+
+    let gid = grid_idx(row, col, 0);
+    assert_eq!(
+        field.encodde_neighborhood(gid, row, col),
+        [Empty, Sand, Sand, Empty]
+    );
+}
+
+#[test]
+fn test_step() {
+    use CellType::*;
+
+    let mut field = Field::new_empty(4, 4, Empty);
+
+    field.togglerc(1, 1);
+    field.togglerc(2, 2);
+
+    print!("field\n{}", field);
+
+    field.step(0);
+
+    print!("field\n{}", field);
+
+    assert_eq!(
+        field.encodde_neighborhood(1, 0, 0),
+        [Empty, Empty, Sand, Sand]
+    )
+}
+
+#[test]
+fn understand_modulus() {
+    assert_eq!(0 % 2, 0);
+    assert_eq!(1 % 2, 1);
+    assert_eq!(2 % 2, 0);
+    assert_eq!(3 % 2, 1);
 }
