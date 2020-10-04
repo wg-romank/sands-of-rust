@@ -108,11 +108,94 @@ impl Field {
     } 
 
     pub fn step(&mut self) {
-        
+        let w = self.width;
+        let h = self.height;
+        let mut new_values = self.values.clone();
+        for idx in 0..(w * h) {
+            let row = idx / w;
+            let col = idx % w;
+
+            let gid = grid_idx(row, col);
+
+            let nh = match gid {
+                // * 2
+                // 3 4
+                1 => self.slice((row, col), (row, col + 1), (row + 1, col), (row + 1, col + 1)),
+                // 1 *
+                // 3 4
+                2 => self.slice((row, col - 1), (row, col), (row + 1, col - 1), (row + 1, col)),
+                // 1 2
+                // * 4
+                3 => self.slice((row - 1, col), (row - 1, col + 1), (row, col), (row, col + 1)),
+                // 1 2
+                // 3 *
+                4 => self.slice((row - 1, col - 1), (row - 1, col), (row, col - 1), (row, col)),
+                _ => panic!("OMG"),
+            };
+
+            let shifted = rules(nh);
+
+            new_values[idx] = shifted[(gid - 1) as usize];
+        }
+        self.values = new_values;
+    }
+}
+
+fn rules(slice: [CellType; 4]) -> [CellType; 4] {
+    use CellType::*;
+    match slice {
+        [Sand, Empty,
+         Empty, Empty] => [Empty, Empty,
+                           Sand, Empty],
+        [Sand, Sand,
+         Sand, Empty] => [Sand, Empty,
+                          Sand, Sand],
+        [Sand, Sand,
+         Empty, Empty] => [Empty, Empty,
+                           Sand, Sand],
+        [Empty, Sand,
+         Sand, Empty] => [Empty, Empty,
+                          Sand, Sand],
+        [Empty, Sand,
+         Empty, Empty] => [Empty, Empty,
+                           Empty, Sand],
+        [Sand, Sand,
+         Empty, Sand] => [Empty, Sand,
+                          Sand, Sand],
+        [Sand, Empty,
+         Empty, Sand] => [Empty, Empty,
+                          Sand, Sand],
+        [Sand, Empty,
+         Sand, Empty] => [Empty, Empty,
+                          Sand, Sand],
+        [Empty, Sand,
+         Empty, Sand] => [Empty, Empty,
+                          Sand, Sand],
+        otherwise => otherwise
+    }
+}
+
+fn grid_idx(i: usize, j: usize) -> u8 {
+    match (i, j) {
+        (0, 0) => 1,
+        (1, 0) => 2,
+        (0, 1) => 3,
+        (1, 1) => 4,
+        (_, _) => 255
     }
 }
 
 impl Field {
+    pub fn slice(&self, i1: (usize, usize), i2: (usize, usize), i3: (usize, usize), i4: (usize, usize)) -> [CellType; 4] {
+        [
+            self.values[self.get_idx(i1.0, i1.1)],
+            self.values[self.get_idx(i2.0, i2.1)],
+            self.values[self.get_idx(i3.0, i3.1)],
+            self.values[self.get_idx(i4.0, i4.1)],
+        ]
+    }
+
+
     pub fn get_idx(&self, row: usize, col: usize) -> usize {
         row * self.width + col
     }
