@@ -130,7 +130,7 @@ impl Field {
             let shifted = rules(nh);
 
             if shifted != nh {
-                print!("({},{}) {:?} -> {:?}\n", row, col, nh, shifted);
+                print!("gid={} ({},{}) {:?} -> {:?}\n", gid, row, col, nh, shifted);
             }
 
             new_values[idx] = shifted[(gid - 1) as usize];
@@ -177,8 +177,8 @@ fn grid_idx(i: usize, j: usize, time_step: u32) -> u8 {
     let step_rounded = time_step % 2;
     let gid = match (i % 2, j % 2) {
         (0, 0) => 1,
-        (1, 0) => 2,
-        (0, 1) => 3,
+        (0, 1) => 2,
+        (1, 0) => 3,
         (1, 1) => 4,
         (_, _) => panic!("Invalid i={} j={}", i, j)
     };
