@@ -116,6 +116,7 @@ impl Field {
         let h = self.height;
         let mut new_values = self.values.clone();
         for idx in 0..(w * h) {
+            // skip some updates?
             let row = idx / w;
             let col = idx % w;
 
@@ -125,8 +126,7 @@ impl Field {
 
             let shifted = rules(nh);
 
-            use CellType::*;
-            if shifted != [Empty, Empty, Empty, Empty] && shifted != nh {
+            if shifted != nh {
                 print!("({},{}) {:?} -> {:?}\n", row, col, nh, shifted);
             }
 
