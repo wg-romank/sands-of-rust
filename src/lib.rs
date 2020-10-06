@@ -126,7 +126,7 @@ pub fn initial_state(
     let packf32 = |v: &[f32]| { v.iter().flat_map(|el| el.to_le_bytes().to_vec()).collect::<Vec<u8>>() };
     let packu16 = |v: &[u16]| { v.iter().flat_map(|el| el.to_le_bytes().to_vec()).collect::<Vec<u8>>() };
 
-    let empty_bytes = field::Field::new(w as usize, h as usize);
+    let empty_bytes = field::Field::new_empty(w as usize, h as usize, field::CellType::Empty);
 
     state
         .vertex_buffer("vert_position", packf32(&vertices).as_slice())?
@@ -144,7 +144,7 @@ pub fn animation_frame(
     display_shader: &gl::Program,
     update_shader: &gl::Program,
     copy_shader: &gl::Program,
-    force_field: &field::Field,
+    force_field: &mut field::Field,
     state: &mut gl::GlState,
     time_step: f32,
 ) -> Result<(), JsValue> {
@@ -162,10 +162,13 @@ pub fn animation_frame(
     let w = force_field.width as u32;
     let h = force_field.height as u32;
 
+    force_field.step(time_step as u32);
+
     state
-        .texture("force_field", Some(&force_field.bytes().as_slice()), w, h)?
-        .run_mut(update_shader, &uniforms, "state")?
-        .run_mut(copy_shader, &copy_uniforms, "display")?
+        // .texture("force_field", Some(&force_field.bytes().as_slice()), w, h)?
+        .texture("state", Some(&force_field.bytes().as_slice()), w, h)?
+        // .run_mut(update_shader, &uniforms, "state")?
+        // .run_mut(copy_shader, &copy_uniforms, "display")?
         .run(display_shader, &copy_uniforms)?;
 
     Ok(())
