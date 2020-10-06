@@ -266,7 +266,14 @@ use std::fmt;
 
 impl fmt::Display for Field {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, " ")?;
+        for i in 0..self.height {
+            write!(f, "{}", i)?;
+        }
+        writeln!(f, "")?;
+
         for i in 0..self.width {
+            write!(f, "{}", i)?;
             for j in 0..self.height {
                 let idx = self.get_idx(i, j);
                 let v = self.values[idx];
@@ -357,7 +364,7 @@ fn test_step() {
 
     print!("nh (1, 1) {:?}\n", field.encodde_neighborhood(1, 1, 1));
 
-    field.step(0);
+    field.step(1);
 
     print!("field\n{}", field);
 
