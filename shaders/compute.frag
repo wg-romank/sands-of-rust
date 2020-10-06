@@ -232,7 +232,7 @@ vec4 decodeNeighborhood(int gid, vec4 nh) {
 }
 
 void main() {
-  int gid = timedGridIndex(frag_uv * field_size, time_step);
+  int gid = timedGridIndex(frag_uv, time_step);
 
   vec4 mask = neighborhood(frag_uv, gid);
 
@@ -249,5 +249,5 @@ void main() {
   // }
 
 
-  gl_FragColor = decodeNeighborhood(gid, mask);
+  gl_FragColor = decodeNeighborhood(gid, shiftedMask);
 } 

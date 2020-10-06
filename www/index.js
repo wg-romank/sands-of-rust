@@ -23,7 +23,7 @@ const renderLoop = (timestamp) => {
   lastCall = timestamp;
   cum += delta;
 
-  let fps = 1;
+  let fps = 10;
   if (cum > 1000 / fps) {
     sor.animation_frame(
         display_shader,
