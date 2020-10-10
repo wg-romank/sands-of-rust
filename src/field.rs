@@ -80,6 +80,34 @@ impl Field {
     }
 }
 
+impl Field {
+    pub fn get_idx(&self, row: usize, col: usize) -> usize {
+        row * self.width + col
+    }
+
+    pub fn get_rc_from_xy(&self, x: f32, y: f32) -> (usize, usize) {
+        let row = (x * self.width as f32) as usize;
+        let col = (y * self.height as f32) as usize;
+
+        (row, col)
+    }
+
+    pub fn xy(&self, idx: usize) -> (f32, f32) {
+        get_xy(self.width, self.height, idx)
+    }
+
+    pub fn dx(&self) -> f32 { 1. / self.height as f32 }
+
+    pub fn dy(&self) -> f32 { 1. / self.width as f32 }
+
+    pub fn bytes(&self) -> Vec<u8> {
+        self.values
+            .iter()
+            .flat_map(|e: &CellType| (*e as u32).to_be_bytes().to_vec() )
+            .collect()
+    }
+}
+
 fn rules(slice: [CellType; 4]) -> [CellType; 4] {
     use CellType::*;
     match slice {
@@ -134,34 +162,6 @@ fn grid_idx(i: usize, j: usize, time_step: u32) -> u8 {
             3 => 2,
             o => o,
         }
-    }
-}
-
-impl Field {
-    pub fn get_idx(&self, row: usize, col: usize) -> usize {
-        row * self.width + col
-    }
-
-    pub fn get_rc_from_xy(&self, x: f32, y: f32) -> (usize, usize) {
-        let row = (x * self.width as f32) as usize;
-        let col = (y * self.height as f32) as usize;
-
-        (row, col)
-    }
-
-    pub fn xy(&self, idx: usize) -> (f32, f32) {
-        get_xy(self.width, self.height, idx)
-    }
-
-    pub fn dx(&self) -> f32 { 1. / self.height as f32 }
-
-    pub fn dy(&self) -> f32 { 1. / self.width as f32 }
-
-    pub fn bytes(&self) -> Vec<u8> {
-        self.values
-            .iter()
-            .flat_map(|e: &CellType| (*e as u32).to_be_bytes().to_vec() )
-            .collect()
     }
 }
 
