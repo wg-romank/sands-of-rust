@@ -35,6 +35,7 @@ const renderLoop = (timestamp) => {
     );
     cum = 0;
     timeStep += 1;
+    force_field.clear();
   }
 
   requestAnimationFrame(renderLoop);
@@ -58,7 +59,7 @@ canvas.addEventListener('pointermove', ev => {
 
     let force = button == 0 ? 1000 : -10000;
 
-    force_field.apply_force(canvasTop, canvasLeft, force, 5);
+    force_field.apply_force(canvasTop, canvasLeft, sor.CellType.Sand, force, 5);
   }
 });
 

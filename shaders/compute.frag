@@ -10,13 +10,8 @@ varying vec2 frag_uv;
 vec4 textureOffset(vec2 uv, vec2 offset) {
   // todo: handle borders?
   // handling with clamp currently
-  return texture2D(field, (uv * field_size + offset) / field_size);
-}
-
-vec4 forceOffset(vec2 uv, vec2 offset) {
-  // todo: handle borders?
-  // handling with clamp currently
-  return texture2D(external_force, (uv * field_size + offset) / field_size);
+  return texture2D(field, (uv * field_size + offset) / field_size) +
+    texture2D(external_force, (uv * field_size + offset) / field_size);
 }
 
 const int EMPTY = 0x0;
