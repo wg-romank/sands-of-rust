@@ -23,7 +23,7 @@ const renderLoop = (timestamp) => {
   lastCall = timestamp;
   cum += delta;
 
-  let fps = 10;
+  let fps = 20;
   if (cum > 1000 / fps) {
     sor.animation_frame(
         display_shader,
@@ -59,7 +59,7 @@ canvas.addEventListener('pointermove', ev => {
 
     let force = button == 0 ? 1000 : -10000;
 
-    force_field.apply_force(canvasTop, canvasLeft, sor.CellType.Sand, force, 5);
+    force_field.apply_force(canvasTop, canvasLeft, sor.CellType.Sand, force, 1);
   }
 });
 

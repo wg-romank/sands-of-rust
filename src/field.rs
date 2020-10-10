@@ -1,5 +1,13 @@
 use wasm_bindgen::prelude::*;
 
+
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
+
+
 #[wasm_bindgen]
 #[repr(u32)]
 #[derive(PartialEq, Clone, Copy, Debug)]
@@ -49,22 +57,26 @@ impl Field {
     }
 
     pub fn apply_force(&mut self, x: f32, y: f32, value: CellType, radius: usize) {
-        let (row, col) = self.get_rc_from_xy(x, y);
+        // we flip field in display shader because of rules
+        let (row, col) = self.get_rc_from_xy(1. - x, y);
+        let idx = self.get_idx(row, col);
+        self.values[idx] = value;
 
-        for i in 0..(2 * radius) {
-            let tmp = radius.pow(2) - (i - radius).pow(2);
-            let limit = (tmp as f32).powf(0.5).floor() as usize;
+        // for i in 0..(2 * radius) {
+        //     let tmp = (radius.pow(2) as i32) - (i as i32 - radius as i32).pow(2);
+        //     log!("{} tmp {}", i, tmp);
+        //     let limit = (tmp as f32).powf(0.5).floor() as usize;
 
-            for j in 0..(2 * limit) {
-                let r = row + (i - radius);
-                let c = col + (j - limit);
+        //     for j in 0..(2 * limit) {
+        //         let r = (row as i32 + (i as i32 - radius as i32)) as usize;
+        //         let c = (col as i32 + (j as i32 - limit as i32)) as usize;
 
-                let idx = self.get_idx(r, c);
-                if idx > 0 && idx < self.width * self.height {
-                    self.values[idx] = value;
-                }
-            }
-        }
+        //         let idx = self.get_idx(r, c);
+        //         if idx > 0 && idx < self.width * self.height {
+        //             self.values[idx] = value;
+        //         }
+        //     }
+        // }
 
         self.is_clear = value == CellType::Empty;
     }
@@ -394,4 +406,15 @@ fn understand_modulus() {
     assert_eq!(1 % 2, 1);
     assert_eq!(2 % 2, 0);
     assert_eq!(3 % 2, 1);
+}
+
+#[test]
+fn apply_force() {
+    use CellType::*;
+
+    let mut field = Field::new_empty(4, 4, Empty);
+
+    field.apply_force(0.5, 0.5, CellType::Sand, 2);
+
+    print!("field\n{}", field);
 }

@@ -8,12 +8,6 @@ use glsmrs as gl;
 
 mod field;
 
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
-
 pub fn get_canvas() -> Option<web_sys::HtmlCanvasElement> {
     let document = web_sys::window()?.document()?;
     let canvas = document.get_element_by_id("sands-of-rust-canvas")?;
