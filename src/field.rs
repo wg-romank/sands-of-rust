@@ -276,14 +276,12 @@ impl fmt::Display for Field {
     }
 }
 
-#[wasm_bindgen]
-pub struct FieldSimple {
+struct FieldSimple {
     pub width: usize,
     pub height: usize,
     values: Vec<u32>,
 }
 
-#[wasm_bindgen]
 impl FieldSimple {
     pub fn new(w: usize, h: usize) -> FieldSimple {
         let width = w;
