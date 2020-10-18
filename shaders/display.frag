@@ -7,6 +7,12 @@ varying vec2 frag_uv;
 const int EMPTY = 0x0;
 const int SAND = 0x1;
 
+// uniform struct {
+//     vec2 position;
+//     float radius;
+//     int color;
+// } paint;
+
 int encodeCell(vec4 contents) {
     if (contents.x > 0.0) {
         return SAND;

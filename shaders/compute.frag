@@ -1,17 +1,22 @@
 precision highp float;
 
 uniform sampler2D field;
-uniform sampler2D external_force;
 uniform vec2 field_size;
 uniform float time_step;
+
+uniform vec2 position;
+// uniform vec4 color;
+uniform float radius;
 
 varying vec2 frag_uv;
 
 vec4 textureOffset(vec2 uv, vec2 offset) {
   // todo: handle borders?
   // handling with clamp currently
-  return texture2D(field, (uv * field_size + offset) / field_size) +
-    texture2D(external_force, (uv * field_size + offset) / field_size);
+  vec2 pt = position - uv;
+  float radius_adjusted = radius / field_size.x;
+  return texture2D(field, (uv * field_size + offset) / field_size)
+    + clamp(sign(pow(radius_adjusted, 2.) - dot(pt, pt)), 0., 1.) * vec4(1, 1, 1, 1);
 }
 
 const int EMPTY = 0x0;

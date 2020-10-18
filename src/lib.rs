@@ -90,9 +90,11 @@ pub fn update_shader() -> Result<gl::Program, JsValue> {
         include_str!("../shaders/compute.frag"),
         vec![
             gl::UniformDescription::new("field", gl::UniformType::Sampler2D),
-            gl::UniformDescription::new("external_force", gl::UniformType::Sampler2D),
             gl::UniformDescription::new("field_size", gl::UniformType::Vector2),
             gl::UniformDescription::new("time_step", gl::UniformType::Float),
+            // gl::UniformDescription::new("color", gl::UniformType::Int),
+            gl::UniformDescription::new("radius", gl::UniformType::Float),
+            gl::UniformDescription::new("position", gl::UniformType::Vector2),
         ],
         vec![
             gl::AttributeDescription::new("vert_position", gl::AttributeType::Vector2),
@@ -103,7 +105,6 @@ pub fn update_shader() -> Result<gl::Program, JsValue> {
 
 #[wasm_bindgen]
 pub fn initial_state(
-    force_field: &field::Field,
     w: u32,
     h: u32,
 ) -> Result<gl::GlState, JsValue> {
@@ -127,8 +128,7 @@ pub fn initial_state(
         .vertex_buffer("vert_uv", packf32(&uvs).as_slice())?
         .element_buffer(packu16(&indices).as_slice())?
         .texture("state", Some(&empty_bytes.bytes().as_slice()), w, h)?
-        .texture("display", Some(&empty_bytes.bytes().as_slice()), w, h)?
-        .texture("force_field", Some(&force_field.bytes().as_slice()), w, h)?;
+        .texture("display", Some(&empty_bytes.bytes().as_slice()), w, h)?;
 
     Ok(state)
 }
@@ -138,6 +138,10 @@ pub fn animation_frame(
     display_shader: &gl::Program,
     update_shader: &gl::Program,
     copy_shader: &gl::Program,
+    x: f32,
+    y: f32,
+    color: field::CellType,
+    raidus: f32,
     force_field: &field::Field,
     state: &mut gl::GlState,
     time_step: f32,
@@ -145,6 +149,9 @@ pub fn animation_frame(
     let uniforms = vec![
         ("field", gl::UniformData::Texture("display")),
         ("external_force", gl::UniformData::Texture("force_field")),
+        ("position", gl::UniformData::Vector2([x, y])),
+        // ("color", gl::UniformData::Int(color as u16)),
+        ("radius", gl::UniformData::Scalar(raidus)),
         ("field_size", gl::UniformData::Vector2([force_field.width as f32, force_field.height as f32])),
         ("time_step", gl::UniformData::Scalar(time_step)),
     ].into_iter().collect::<HashMap<_, _>>();
@@ -153,11 +160,7 @@ pub fn animation_frame(
         ("field", gl::UniformData::Texture("state")),
     ].into_iter().collect::<HashMap<_, _>>();
 
-    let w = force_field.width as u32;
-    let h = force_field.height as u32;
-
     state
-        .texture("force_field", Some(&force_field.bytes().as_slice()), w, h)?
         .run_mut(update_shader, &uniforms, "state")?
         .run_mut(copy_shader, &copy_uniforms, "display")?
         .run(display_shader, &copy_uniforms)?;

@@ -21,7 +21,6 @@ pub struct Field {
     pub width: usize,
     pub height: usize,
     values: Vec<CellType>,
-    is_clear: bool,
 }
 
 fn get_xy(w: usize, h: usize, idx: usize) -> (f32, f32) {
@@ -43,7 +42,7 @@ impl Field {
             if  rad <= (0.3 as f32).powf(2.0) && rad >= (0.2 as f32).powf(2.0)  { CellType::Sand } else { CellType::Empty }
         }).collect::<Vec<CellType>>();
 
-        Field { width, height, values, is_clear: false }
+        Field { width, height, values }
     }
 
     pub fn new_empty(w: usize, h: usize, value: CellType) -> Field {
@@ -53,43 +52,9 @@ impl Field {
             .into_iter()
             .map(|_idx| value)
             .collect::<Vec<CellType>>();
-        Field { width, height, values, is_clear: value == CellType::Empty }
+        Field { width, height, values }
     }
 
-    pub fn apply_force(&mut self, x: f32, y: f32, value: CellType, radius: usize) {
-        // we flip field in display shader because of rules
-        let (row, col) = self.get_rc_from_xy(1. - x, y);
-        let idx = self.get_idx(row, col);
-        self.values[idx] = value;
-
-        // for i in 0..(2 * radius) {
-        //     let tmp = (radius.pow(2) as i32) - (i as i32 - radius as i32).pow(2);
-        //     log!("{} tmp {}", i, tmp);
-        //     let limit = (tmp as f32).powf(0.5).floor() as usize;
-
-        //     for j in 0..(2 * limit) {
-        //         let r = (row as i32 + (i as i32 - radius as i32)) as usize;
-        //         let c = (col as i32 + (j as i32 - limit as i32)) as usize;
-
-        //         let idx = self.get_idx(r, c);
-        //         if idx > 0 && idx < self.width * self.height {
-        //             self.values[idx] = value;
-        //         }
-        //     }
-        // }
-
-        self.is_clear = value == CellType::Empty;
-    }
-
-    pub fn clear(&mut self) {
-        if !self.is_clear  {
-            let w = self.width;
-            let h = self.height;
-            for i in 0..(w * h) {
-                self.values[i] = CellType::Empty;
-            }
-        }
-    }
 }
 
 impl Field {

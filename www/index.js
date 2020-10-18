@@ -12,11 +12,16 @@ const display_shader = sor.display_shader();
 const compute_shader = sor.update_shader();
 const copy_shader = sor.copy_shader();
 const force_field = sor.Field.new(w, h);
-const state = sor.initial_state(force_field, w, h);
+const state = sor.initial_state(w, h);
 
 let lastCall = 0;
 let cum = 0;
 let timeStep = 0;
+
+let x = 0
+let y = 0;
+let color = 0;
+let radius = 0;
 
 const renderLoop = (timestamp) => {
   const delta = timestamp - lastCall;
@@ -29,13 +34,18 @@ const renderLoop = (timestamp) => {
         display_shader,
         compute_shader,
         copy_shader,
+        x,
+        y,
+        color,
+        radius,
         force_field,
         state,
         timeStep
     );
     cum = 0;
     timeStep += 1;
-    force_field.clear();
+
+    radius = 0;
   }
 
   requestAnimationFrame(renderLoop);
@@ -55,11 +65,12 @@ canvas.addEventListener('pointermove', ev => {
     const boundingRect = canvas.getBoundingClientRect();
 
     const canvasLeft = (ev.clientX - boundingRect.left) / boundingRect.width;
-    const canvasTop = 1 - (ev.clientY - boundingRect.top) / boundingRect.height;
+    const canvasTop = (ev.clientY - boundingRect.top) / boundingRect.height;
 
-    let force = button == 0 ? 1000 : -10000;
-
-    force_field.apply_force(canvasTop, canvasLeft, sor.CellType.Sand, force, 1);
+    x = canvasLeft;
+    y = canvasTop;
+    color = sor.CellType.Sand;
+    radius = 2;
   }
 });
 
