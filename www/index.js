@@ -20,7 +20,7 @@ let timeStep = 0;
 
 let x = 0
 let y = 0;
-let color = 0;
+let color = sor.CellType.Water;
 let radius = 0;
 
 const renderLoop = (timestamp) => {
@@ -69,13 +69,21 @@ canvas.addEventListener('pointermove', ev => {
 
     x = canvasLeft;
     y = canvasTop;
-    color = sor.CellType.Sand;
     radius = 2;
   }
 });
 
 canvas.addEventListener('pointerup', ev => {
   isDown = false;
+});
+
+canvas.addEventListener('pointerleave', ev => {
+  console.log("EVENT ", ev);
+  if (color == sor.CellType.Water) {
+    color = sor.CellType.Sand;
+  } else {
+    color = sor.CellType.Water;
+  }
 });
 
 requestAnimationFrame(renderLoop);

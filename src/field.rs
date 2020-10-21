@@ -13,7 +13,20 @@ macro_rules! log {
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum CellType {
     Empty = 0,
-    Sand = 16777216 // 256 * 256 * 256
+    Sand = 256,
+    Water = 63536,
+}
+
+
+impl CellType {
+    pub fn to_uniform(&self) -> [f32; 4] {
+        use CellType::*;
+        match self {
+            Sand => [1., 0., 0., 0.],
+            Empty => [0., 0., 0., 0.],
+            Water => [0., 1., 0., 0.],
+        }
+    }
 }
 
 #[wasm_bindgen]
@@ -371,15 +384,4 @@ fn understand_modulus() {
     assert_eq!(1 % 2, 1);
     assert_eq!(2 % 2, 0);
     assert_eq!(3 % 2, 1);
-}
-
-#[test]
-fn apply_force() {
-    use CellType::*;
-
-    let mut field = Field::new_empty(4, 4, Empty);
-
-    field.apply_force(0.5, 0.5, CellType::Sand, 2);
-
-    print!("field\n{}", field);
 }
