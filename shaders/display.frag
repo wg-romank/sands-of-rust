@@ -30,7 +30,7 @@ vec4 cellColor(int cellType) {
     } else if (cellType == SAND) {
         return vec4(vec3(168, 134, 42) / 255.0, 1.0);
     } else if (cellType == WATER) {
-        return vec4(vec3(153, 153, 23) / 255.0, 1.0);
+        return vec4(vec3(103, 133, 193) / 255.0, 1.0);
     } else {
         return vec4(1.0, 0.0, 0.0, 1.0);
     }
