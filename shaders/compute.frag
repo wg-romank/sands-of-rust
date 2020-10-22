@@ -165,54 +165,57 @@ vec4 neighborhood(vec2 uv, int gid) {
 vec4 gravityBlackMagic(vec4 nh) {
   // 1 2
   // 3 4
+  
+  // x y
+  // z w
 
-  if (nh == vec4(1, 0, 0, 0)) {
+  if (nh.yzw == vec3(0, 0, 0)) {
     // * ~  ~ ~
     // ~ ~  * ~
-    return vec4(0, 0, 1, 0);
-  } else if (nh == vec4(1, 1, 1, 0)) {
-    // * *  * ~
-    // * ~  * *
-    return vec4(1, 0, 1, 1);
-  } else if (nh == vec4(1, 1, 0, 0)) {
-    // * *  ~ ~
-    // ~ ~  * *
-    return vec4(0, 0, 1, 1);
-  } else if (nh == vec4(0, 1, 1, 0)) {
-    // ~ *  ~ ~
-    // * ~  * *
-    return vec4(0, 0, 1, 1);
-  } else if (nh == vec4(0, 1, 0, 0)) {
+    return nh.zyxw;
+  } else if (nh.xzw == vec3(0, 0, 0)) {
     // ~ *  ~ ~
     // ~ ~  ~ *
-    return vec4(0, 0, 0, 1);
-  } else if (nh == vec4(1, 1, 0, 1)) {
-    // * *  ~ *
-    // ~ *  * *
-    return vec4(0, 1, 1, 1);
-  } else if (nh == vec4(1, 0, 0, 1)) {
-    // * ~  ~ ~
-    // ~ *  * *
-    return vec4(0, 0, 1, 1);
-  } else if (nh == vec4(1, 0, 1, 0)) {
-    // * ~  ~ ~
-    // * ~  * *
-    return vec4(0, 0, 1, 1);
-  } else if (nh == vec4(0, 1, 0, 1)) {
+    return nh.xwzy;
+  } else if (nh.xz == vec2(0, 0)) {
     // ~ *  ~ ~
     // ~ *  * *
-    return vec4(0, 0, 1, 1);
-  } // Liq below
-  else if (nh == vec4(2, 2, 2, 0)) {
-    return vec4(2, 2, 0, 2);
-  } else if (nh == vec4(2, 0, 1, 1)) {
-    return vec4(0, 2, 1, 1);
-  } else if (nh == vec4(0, 2, 1, 1)) {
-    return vec4(2, 0, 1, 1);
-  } else if (nh == vec4(0, 0, 2, 0)) {
-    return vec4(0, 0, 0, 2);
-  } else if (nh == vec4(0, 0, 0, 2)) {
-    return vec4(0, 0, 2, 0);
+    return nh.xzyw;
+  } else if (nh.zw == vec2(0, 0)) {
+    // * *  ~ ~
+    // ~ ~  * *
+    return nh.zwxy;
+  } else if (nh.xw == vec2(0, 0)) {
+    // ~ *  ~ ~
+    // * ~  * *
+    return nh.xwzy;
+  } else if (nh.yz == vec2(0, 0)) {
+    // * ~  ~ ~
+    // ~ *  * *
+    return nh.zyxw;
+  } else if (nh.yw == vec2(0, 0)) {
+    // * ~  ~ ~
+    // * ~  * *
+    return nh.wyzx;
+  } else if (nh.z == 0.) {
+    // * *  ~ *
+    // ~ *  * *
+    return nh.zyxw;
+  } else if (nh.w == 0.) {
+    // * *  * ~
+    // * ~  * *
+    return nh.xwzy;
+  // } // Liq below
+  // else if (nh == vec4(2, 2, 2, 0)) {
+  //   return vec4(2, 2, 0, 2);
+  // } else if (nh == vec4(2, 0, 1, 1)) {
+  //   return vec4(0, 2, 1, 1);
+  // } else if (nh == vec4(0, 2, 1, 1)) {
+  //   return vec4(2, 0, 1, 1);
+  // } else if (nh == vec4(0, 0, 2, 0)) {
+  //   return vec4(0, 0, 0, 2);
+  // } else if (nh == vec4(0, 0, 0, 2)) {
+  //   return vec4(0, 0, 2, 0);
   } else {
     return nh;
   }
