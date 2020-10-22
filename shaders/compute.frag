@@ -169,7 +169,27 @@ vec4 gravityBlackMagic(vec4 nh) {
   // x y
   // z w
 
-  if (nh.yzw == vec3(0, 0, 0)) {
+  if (nh == vec4(2, 2, 2, 0)) {
+    // L L  L L
+    // L ~  ~ L
+    return vec4(2, 2, 0, 2);
+  } else if (nh == vec4(2, 0, 1, 1)) {
+    // L ~  ~ L
+    // * *  * *
+    return vec4(0, 2, 1, 1);
+  } else if (nh == vec4(0, 2, 1, 1)) {
+    // ~ L  L ~
+    // * *  * *
+    return vec4(2, 0, 1, 1);
+  } else if (nh == vec4(0, 0, 2, 0)) {
+    // ~ ~  ~ ~
+    // L ~  ~ L
+    return vec4(0, 0, 0, 2);
+  } else if (nh == vec4(0, 0, 0, 2)) {
+    // ~ ~  ~ ~
+    // ~ L  L ~
+    return vec4(0, 0, 2, 0);
+  } else if (nh.yzw == vec3(0, 0, 0)) {
     // * ~  ~ ~
     // ~ ~  * ~
     return nh.zyxw;
@@ -205,17 +225,6 @@ vec4 gravityBlackMagic(vec4 nh) {
     // * *  * ~
     // * ~  * *
     return nh.xwzy;
-  // } // Liq below
-  // else if (nh == vec4(2, 2, 2, 0)) {
-  //   return vec4(2, 2, 0, 2);
-  // } else if (nh == vec4(2, 0, 1, 1)) {
-  //   return vec4(0, 2, 1, 1);
-  // } else if (nh == vec4(0, 2, 1, 1)) {
-  //   return vec4(2, 0, 1, 1);
-  // } else if (nh == vec4(0, 0, 2, 0)) {
-  //   return vec4(0, 0, 0, 2);
-  // } else if (nh == vec4(0, 0, 0, 2)) {
-  //   return vec4(0, 0, 2, 0);
   } else {
     return nh;
   }

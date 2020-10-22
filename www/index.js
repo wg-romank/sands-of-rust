@@ -78,7 +78,6 @@ canvas.addEventListener('pointerup', ev => {
 });
 
 canvas.addEventListener('pointerleave', ev => {
-  console.log("EVENT ", ev);
   if (color == sor.CellType.Water) {
     color = sor.CellType.Sand;
   } else {
