@@ -8,19 +8,18 @@ const int EMPTY = 0x0;
 const int SAND = 0x1;
 const int WATER = 0x2;
 
-// uniform struct {
-//     vec2 position;
-//     float radius;
-//     int color;
-// } paint;
+const vec4 error = vec4(1., 0., 0., 1.);
 
 int encodeCell(vec4 contents) {
-    if (contents.x > 0.0) {
+    float v = contents.x * 255.;
+    if (v == 0.) {
+        return EMPTY;
+    } else if (v == 1.) {
         return SAND;
-    } else if (contents.g > 0.0) {
+    } else if (v == 2.) {
         return WATER;
     } else {
-        return EMPTY;
+        return -1;
     }
 }
 
@@ -32,11 +31,10 @@ vec4 cellColor(int cellType) {
     } else if (cellType == WATER) {
         return vec4(vec3(103, 133, 193) / 255.0, 1.0);
     } else {
-        return vec4(1.0, 0.0, 0.0, 1.0);
+        return error;
     }
 }
 
 void main() {
     gl_FragColor = cellColor(encodeCell(texture2D(field, vec2(frag_uv.x, 1.0 - frag_uv.y))));
-    // gl_FragColor = texture2D(field, frag_uv);
 }

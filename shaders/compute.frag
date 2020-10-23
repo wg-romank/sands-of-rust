@@ -5,7 +5,7 @@ uniform vec2 field_size;
 uniform float time_step;
 
 uniform vec2 position;
-uniform vec4 color;
+uniform float color;
 uniform float radius;
 
 varying vec2 frag_uv;
@@ -15,43 +15,9 @@ vec4 textureOffset(vec2 uv, vec2 offset) {
   // handling with clamp currently
   vec2 pt = position - uv;
   float radius_adjusted = radius / field_size.x;
+  float color_norm = color / 255.;
   return texture2D(field, (uv * field_size + offset) / field_size)
-    + clamp(sign(pow(radius_adjusted, 2.) - dot(pt, pt)), 0., 1.) * color;
-}
-
-const int EMPTY = 0x0;
-const int SAND = 0x1;
-const int WATER = 0x2;
-
-vec4 decodeCell(int value) {
-  if (value == SAND) {
-    return vec4(1., 0., 0., 1.);
-  } else if (value == WATER) {
-    return vec4(0., 1., 0., 1.);
-  } else {
-    return vec4(0., 0., 0., 1.);
-  }
-}
-
-vec4 encode(vec4 contents, int position) {
-  int value = 0;
-  if (contents.g > 0.) {
-    value = 2;
-  } else if (contents.r > 0.) {
-    value = 1;
-  }
-
-  if (position == 0) {
-    return vec4(value, 0, 0, 0);
-  } else if (position == 1) {
-    return vec4(0, value, 0, 0);
-  } else if (position == 2) {
-    return vec4(0, 0, value, 0);
-  } else if (position == 3) {
-    return vec4(0, 0, 0, value);
-  } else {
-    return vec4(0, 0, 0, 0);
-  }
+    + clamp(sign(pow(radius_adjusted, 2.) - dot(pt, pt)), 0., 1.) * vec4(color_norm, 0., 0., 0.);
 }
 
 int gridIndex(vec2 coord) {
@@ -159,7 +125,7 @@ vec4 neighborhood(vec2 uv, int gid) {
   vec4 c3 = textureOffset(uv, offsetC3);
   vec4 c4 = textureOffset(uv, offsetC4);
 
-  return encode(c1, 0) + encode(c2, 1) + encode(c3, 2) + encode(c4, 3);
+  return vec4(c1.x, c2.x, c3.x, c4.x);
 }
 
 vec4 gravityBlackMagic(vec4 nh) {
@@ -245,13 +211,7 @@ vec4 vectorId(int gid) {
 vec4 decodeNeighborhood(int gid, vec4 nh) {
   float s = dot(vectorId(gid), nh);
 
-  if (s == 1.) {
-    return decodeCell(SAND);
-  } if (s == 2.) {
-    return decodeCell(WATER);
-  } else {
-    return decodeCell(EMPTY);
-  }
+  return vec4(s, 0, 0, 0);
 }
 
 void main() {
@@ -259,7 +219,7 @@ void main() {
 
   vec4 mask = neighborhood(frag_uv, gid);
 
-  vec4 shiftedMask = gravityBlackMagic(mask);
+  vec4 shiftedMask = gravityBlackMagic(mask * 255.) / 255.;
 
   // if (gid == 1) {
   //   gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);

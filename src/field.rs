@@ -13,21 +13,10 @@ macro_rules! log {
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum CellType {
     Empty = 0,
-    Sand = 256,
-    Water = 63536,
+    Sand = 1,
+    Water = 2,
 }
 
-
-impl CellType {
-    pub fn to_uniform(&self) -> [f32; 4] {
-        use CellType::*;
-        match self {
-            Sand => [1., 0., 0., 0.],
-            Empty => [0., 0., 0., 0.],
-            Water => [0., 1., 0., 0.],
-        }
-    }
-}
 
 #[wasm_bindgen]
 pub struct Field {
@@ -294,14 +283,6 @@ impl FieldSimple {
     }
 }
 
-
-#[test]
-fn test_encoding() {
-    let field = Field::new(32, 32);
-    let field_simple = FieldSimple::new(32, 32);
-    assert_eq!(field.bytes(), field_simple.bytes());
-}
-
 #[test]
 fn test_grid_idx() {
     for i in 0..10 {
@@ -384,4 +365,13 @@ fn understand_modulus() {
     assert_eq!(1 % 2, 1);
     assert_eq!(2 % 2, 0);
     assert_eq!(3 % 2, 1);
+}
+
+#[test]
+fn understand_conversion() {
+    use CellType::*;
+    print!("Cell {}\n", Water as u32);
+    print!("Cell {}\n", Water as u32 as f32);
+
+    assert_eq!(1, 2);
 }
