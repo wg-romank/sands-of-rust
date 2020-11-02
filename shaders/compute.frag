@@ -16,8 +16,13 @@ vec4 textureOffset(vec2 uv, vec2 offset) {
   vec2 pt = position - uv;
   float radius_adjusted = radius / field_size.x;
   float color_norm = color / 255.;
-  return texture2D(field, (uv * field_size + offset) / field_size)
-    + clamp(sign(pow(radius_adjusted, 2.) - dot(pt, pt)), 0., 1.) * vec4(color_norm, 0., 0., 0.);
+
+  float img_component = texture2D(field, (uv * field_size + offset) / field_size).x;
+  float force_component = clamp(sign(pow(radius_adjusted, 2.) - dot(pt, pt)), 0., 1.) * color_norm;
+
+  float cutoff = max(img_component, force_component);
+
+  return vec4(clamp(img_component + force_component, 0., cutoff), 0., 0., 0.);
 }
 
 int gridIndex(vec2 coord) {
