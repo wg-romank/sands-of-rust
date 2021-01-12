@@ -1,0 +1,54 @@
+Having heard of Noita which was released not that long time ago I have instantly fallen in love with fallen sands mechanics.
+After watching talk given by () and realizing that falling sands is pretty straightforward to implement I went right at it.
+
+I did not have much game making experience but I wanted to make something that would run pretty much anywhere, so a webapp was a natural choice.
+As a person without much exposure to different web frameworks but a person who is very much familiar with functional programming paradigm I quikly learned about Elm.
+
+That is a very interesting language that syntatically resembles Haskell and compiles to optimized Javascript. It took me a while learning from ground up to be
+able to make something interactive. Elm had a very nice set of GLSL bindings, for low level drawing, but OpenGL concepts were also very much new to myself.
+
+Playing around with Elm, first making few random projects, then working on falling sands I quickly hit performance limitations.
+You see if you want to make a game or at least interesting simulation then hard limit of field of 100x100 is a bummer.
+I did a bit of research and it turned out that was the case for anything that runs on V8 in javascript, unless you are very smart with its optimization, which I am not, not atm at least.
+
+I then went on a journey to seek alternatives of which WebAssembly was an obvious choices. I quickly found a very popular implementation of falling sands (sandspiel) with its own community.
+Along with blogposts by its author with implementation notes. It turned out that field size while increased but not much (well 3x or 6x).
+
+Being now more or less familiar with GLSL I started to think about other possibilities. See, shaders run massively parallel computations very quickly which is done by utilizing power of GPU that has many processing cores.
+An obvious choice was to implement falling sands in a parallel way. Original talk done by (Noita devs) actually mentioned splitting the field into segments for running parallel computation,
+but it adds much of complexity as well as not really possible in the current state of WebAssembly support.
+
+But then I found this (reference to falling turnip), an implementation of falling sands in Haskell using parallel arrays, that is leveraging block-cellular automata rules.
+You see vanila rules of falling sands are very much state dependend and this state is filled in certain order, thus you must compute values for neighboor of the cell to know its new state for the iteration.
+
+(diagram)
+
+But block-cellular automata does not need any intermediate state, it just specifies a set of rules in the form of this pattern is converted to that pattern on the next step.
+
+(diagram)
+
+Here we take time to describe one useful higher order function called a map (...)
+
+After spending much time with GLSL writing shaders and using functional programming for few years before that you realize that a fragment shader is just a map operation that is done on the array.
+Array is 2D and called a texture of course, but this map runs in parallel on GPU.
+
+(diagram)
+
+Going back to that Haskell implementation a natural way to apply rules for the array is also a map. A bit tricky one since it is not mapping elements per se but elements with its neighboors, but still.
+
+Trying to hack it together using GLSL took me a while. First of all shaders run on the GPU and there's not much of a debugging option that I know of. No way to println, no way to pause execution.
+What you can do is set a pixel to certain color in case condition is met, which helps... but painfully slow.
+
+I even had to create a reference implementation in Rust to match my GLSL just to see if I understand it at all and not doing something that obviously wouldn't work.
+But then after few weeks of trial and error I finally made it, a somewhat playable demo with 2 substances (sand and water), that I can scale to 2K or even 4K if your GPU has enough memory.
+
+(Plans)
+
+Of course this is state is far from finished, many things could be improved, many things could be added.
+Writing rules in GLSL by hand is not fun process at all, so having a macro to generate them would be a start.
+Having just 2 substances makes the prototype not that fun after a minuter or two, so new ones should definetely come.
+Adding rigid bodies in the picture is another far fetched goal to make it a full game.
+
+That is about it, hope you find it enternating, if you do please reach out to me with your thoughts.
+
+Cheers.
