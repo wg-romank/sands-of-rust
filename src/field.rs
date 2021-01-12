@@ -370,8 +370,7 @@ fn understand_modulus() {
 #[test]
 fn understand_conversion() {
     use CellType::*;
-    print!("Cell {}\n", Water as u32);
-    print!("Cell {}\n", Water as u32 as f32);
 
-    assert_eq!(1, 2);
+    assert_eq!(Water as u32, 2);
+    assert_eq!(Water as u32 as f32, 2.);
 }
