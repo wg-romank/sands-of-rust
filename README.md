@@ -8,4 +8,4 @@ To run
 
 ```make serve```
 
-This will start a web server listening on `localhost:8080`, configured from `www/webpack.config.js`
+This will start a web server listening on `localhost:8888`, configured from `www/webpack.config.js`

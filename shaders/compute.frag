@@ -130,33 +130,50 @@ vec4 neighborhood(vec2 uv, int gid) {
   return vec4(c1.x, c2.x, c3.x, c4.x);
 }
 
-vec4 gravityBlackMagic(vec4 nh) {
+vec4 codeNh(vec4 nh, int current) {
+  return nh;
+}
+
+vec4 gravityBlackMagic(vec4 nh, int current) {
   // 1 2
   // 3 4
   
   // x y
   // z w
 
-  if (nh == vec4(2, 2, 2, 0)) {
+  // L liquid -> 2
+  // * particle -> 1
+  // ~ empty -> 0
+
+  // particles (~) heavier than liquid (L)
+  // empty space lighter than particles (*) and liquid (L)
+
+  // for each iteration we assign heavy particle (*)
+  // oil is ligher than water, it floats atop
+  // oil is (L) while water is (*) and everyhing that is heavier than water is (*)
+
+  // todo: walls?
+
+  if (codeNh(nh, current) == vec4(2, 2, 2, 0)) {
     // L L  L L
     // L ~  ~ L
-    return vec4(2, 2, 0, 2);
-  } else if (nh == vec4(2, 0, 1, 1)) {
+    return nh.xywz;
+  } else if (codeNh(nh, current) == vec4(2, 0, 1, 1)) {
     // L ~  ~ L
     // * *  * *
-    return vec4(0, 2, 1, 1);
-  } else if (nh == vec4(0, 2, 1, 1)) {
+    return nh.yxzw;
+  } else if (codeNh(nh, current) == vec4(0, 2, 1, 1)) {
     // ~ L  L ~
     // * *  * *
-    return vec4(2, 0, 1, 1);
-  } else if (nh == vec4(0, 0, 2, 0)) {
+    return nh.yxzw;
+  } else if (codeNh(nh, current) == vec4(0, 0, 2, 0)) {
     // ~ ~  ~ ~
     // L ~  ~ L
-    return vec4(0, 0, 0, 2);
-  } else if (nh == vec4(0, 0, 0, 2)) {
+    return nh.xywz;
+  } else if (codeNh(nh, current) == vec4(0, 0, 0, 2)) {
     // ~ ~  ~ ~
     // ~ L  L ~
-    return vec4(0, 0, 2, 0);
+    return nh.xywz;
   } else if (nh.yzw == vec3(0, 0, 0)) {
     // * ~  ~ ~
     // ~ ~  * ~
@@ -221,7 +238,10 @@ void main() {
 
   vec4 mask = neighborhood(frag_uv, gid);
 
-  vec4 shiftedMask = gravityBlackMagic(mask * 255.) / 255.;
+  // values passed in texture are scaled from 0 to 1
+  // for (int i = 0; i < 10; i = i + 1) {
+  vec4 shiftedMask = gravityBlackMagic(mask * 255., 0) / 255.;
+  // }
 
   gl_FragColor = decodeNeighborhood(gid, shiftedMask);
 } 
