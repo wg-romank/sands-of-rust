@@ -119,12 +119,6 @@ vec4 neighborhood(vec2 uv, int gid) {
     offsetC4 = vec2( 0, 0);
   }
 
-  // vec4 c1 = textureOffset(uv, vec2( 0, 0)) + forceOffset(uv, vec2( 0, 0));
-  // vec4 c2 = textureOffset(uv, vec2(-1, 0)) + forceOffset(uv, vec2(-1, 0)); // right
-  // vec4 c3 = textureOffset(uv, vec2( 0, 1)) + forceOffset(uv, vec2( 0, 1)); // down
-  // vec4 c4 = textureOffset(uv, vec2(-1, 1)) + forceOffset(uv, vec2(-1, 1)); // righ + down
-
-
   // c1 c2
   // c3 c4
  
@@ -228,17 +222,6 @@ void main() {
   vec4 mask = neighborhood(frag_uv, gid);
 
   vec4 shiftedMask = gravityBlackMagic(mask * 255.) / 255.;
-
-  // if (gid == 1) {
-  //   gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-  // } else if (gid == 2) {
-  //   gl_FragColor = vec4(0.5, 0, 0.5, 1.0);
-  // } else if (gid == 3) {
-  //   gl_FragColor = vec4(0.5, 1.0, 0.5, 1.0);
-  // } else if (gid == 4) {
-  //   gl_FragColor = vec4(0.5, 0.5, 1.0, 1.0);
-  // }
-
 
   gl_FragColor = decodeNeighborhood(gid, shiftedMask);
 } 
