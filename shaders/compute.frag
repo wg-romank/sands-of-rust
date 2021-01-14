@@ -20,9 +20,11 @@ vec4 textureOffset(vec2 uv, vec2 offset) {
   float img_component = texture2D(field, (uv * field_size + offset) / field_size).x;
   float force_component = clamp(sign(pow(radius_adjusted, 2.) - dot(pt, pt)), 0., 1.) * color_norm;
 
-  float cutoff = max(img_component, force_component);
-
-  return vec4(clamp(img_component + force_component, 0., cutoff), 0., 0., 0.);
+  if (force_component != 0.0) {
+    return vec4(force_component, 0., 0., 0.);
+  } else {
+    return vec4(img_component, 0., 0., 0.);
+  }
 }
 
 int gridIndex(vec2 coord) {
@@ -72,6 +74,7 @@ int timedGridIndex(vec2 coord, float time_step) {
       return 1;
     }
   }
+  return -1;
 }
 
 vec4 neighborhood(vec2 uv, int gid) {
