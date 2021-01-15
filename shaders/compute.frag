@@ -154,10 +154,22 @@ vec4 gravityBlackMagic(vec4 nh, int current) {
 
   // todo: walls?
 
-  if (codeNh(nh, current) == vec4(2, 2, 2, 0)) {
+  if (codeNh(nh, current) == vec4(2, 2, 2, 1)) {
     // L L  L L
     // L ~  ~ L
     return nh.xywz;
+  } else if (codeNh(nh, current) == vec4(2, 2, 1, 2)) {
+    // L L  L L
+    // ~ L  L ~
+    return nh.xywz;
+  } else if (codeNh(nh, current) == vec4(2, 1, 3, 1)) {
+    // L ~  ~ ~
+    // * ~  * L
+    return nh.wyzx;
+  } else if (codeNh(nh, current) == vec4(1, 2, 1, 3)) {
+    // ~ L  ~ ~
+    // ~ *  L *
+    return nh.xzyw;
   } else if (codeNh(nh, current) == vec4(2, 1, 3, 3)) {
     // L ~  ~ L
     // * *  * *
