@@ -11,7 +11,6 @@ canvas.setAttribute('height', brect.height);
 const display_shader = sor.display_shader();
 const compute_shader = sor.update_shader();
 const copy_shader = sor.copy_shader();
-const force_field = sor.Field.new(w, h);
 const state = sor.initial_state(w, h);
 
 let lastCall = 0;
@@ -20,7 +19,7 @@ let timeStep = 0;
 
 let x = 0
 let y = 0;
-let color = sor.CellType.Water;
+let color = sor.CellType.Empty;
 let radius = 0;
 
 const renderLoop = (timestamp) => {
@@ -38,7 +37,8 @@ const renderLoop = (timestamp) => {
         y,
         color,
         radius,
-        force_field,
+        w,
+        h,
         state,
         timeStep
     );
@@ -77,12 +77,15 @@ canvas.addEventListener('pointerup', ev => {
   isDown = false;
 });
 
-canvas.addEventListener('pointerleave', ev => {
-  if (color == sor.CellType.Water) {
+document.addEventListener('keydown', ev => {
+  console.log("Key down ", ev);
+  if (ev.key == "1") {
     color = sor.CellType.Sand;
-  } else {
+  } else if (ev.key == "2") {
     color = sor.CellType.Water;
+  } else if (ev.key == "3") {
+    color = sor.CellType.Empty;
   }
-});
+})
 
 requestAnimationFrame(renderLoop);

@@ -131,7 +131,7 @@ vec4 neighborhood(vec2 uv, int gid) {
 }
 
 vec4 codeNh(vec4 nh, int current) {
-  return nh;
+  return nh / 10.;
 }
 
 vec4 gravityBlackMagic(vec4 nh, int current) {
@@ -158,55 +158,55 @@ vec4 gravityBlackMagic(vec4 nh, int current) {
     // L L  L L
     // L ~  ~ L
     return nh.xywz;
-  } else if (codeNh(nh, current) == vec4(2, 0, 1, 1)) {
+  } else if (codeNh(nh, current) == vec4(2, 1, 3, 3)) {
     // L ~  ~ L
     // * *  * *
     return nh.yxzw;
-  } else if (codeNh(nh, current) == vec4(0, 2, 1, 1)) {
+  } else if (codeNh(nh, current) == vec4(1, 2, 3, 3)) {
     // ~ L  L ~
     // * *  * *
     return nh.yxzw;
-  } else if (codeNh(nh, current) == vec4(0, 0, 2, 0)) {
+  } else if (codeNh(nh, current) == vec4(1, 1, 2, 1)) {
     // ~ ~  ~ ~
     // L ~  ~ L
     return nh.xywz;
-  } else if (codeNh(nh, current) == vec4(0, 0, 0, 2)) {
+  } else if (codeNh(nh, current) == vec4(1, 1, 1, 2)) {
     // ~ ~  ~ ~
     // ~ L  L ~
     return nh.xywz;
-  } else if (nh.yzw == vec3(0, 0, 0)) {
+  } else if (codeNh(nh, current).yzw == vec3(1, 1, 1)) {
     // * ~  ~ ~
     // ~ ~  * ~
     return nh.zyxw;
-  } else if (nh.xzw == vec3(0, 0, 0)) {
+  } else if (codeNh(nh, current).xzw == vec3(1, 1, 1)) {
     // ~ *  ~ ~
     // ~ ~  ~ *
     return nh.xwzy;
-  } else if (nh.xz == vec2(0, 0)) {
+  } else if (codeNh(nh, current).xz == vec2(1, 1)) {
     // ~ *  ~ ~
     // ~ *  * *
     return nh.xzyw;
-  } else if (nh.zw == vec2(0, 0)) {
+  } else if (codeNh(nh, current).zw == vec2(1, 1)) {
     // * *  ~ ~
     // ~ ~  * *
     return nh.zwxy;
-  } else if (nh.xw == vec2(0, 0)) {
+  } else if (codeNh(nh, current).xw == vec2(1, 1)) {
     // ~ *  ~ ~
     // * ~  * *
     return nh.xwzy;
-  } else if (nh.yz == vec2(0, 0)) {
+  } else if (codeNh(nh, current).yz == vec2(1, 1)) {
     // * ~  ~ ~
     // ~ *  * *
     return nh.zyxw;
-  } else if (nh.yw == vec2(0, 0)) {
+  } else if (codeNh(nh, current).yw == vec2(1, 1)) {
     // * ~  ~ ~
     // * ~  * *
     return nh.wyzx;
-  } else if (nh.z == 0.) {
+  } else if (codeNh(nh, current).z == 1.) {
     // * *  ~ *
     // ~ *  * *
     return nh.zyxw;
-  } else if (nh.w == 0.) {
+  } else if (codeNh(nh, current).w == 1.) {
     // * *  * ~
     // * ~  * *
     return nh.xwzy;

@@ -12,9 +12,9 @@ macro_rules! log {
 #[repr(u32)]
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum CellType {
-    Empty = 0,
-    Sand = 1,
-    Water = 2,
+    Empty = 10,
+    Water = 20,
+    Sand = 30,
 }
 
 
@@ -82,7 +82,7 @@ impl Field {
     pub fn bytes(&self) -> Vec<u8> {
         self.values
             .iter()
-            .flat_map(|e: &CellType| (*e as u32).to_be_bytes().to_vec() )
+            .flat_map(|e: &CellType| (*e as u32).to_le_bytes().to_vec() )
             .collect()
     }
 }

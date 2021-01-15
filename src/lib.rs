@@ -116,8 +116,6 @@ pub fn initial_state(
 
     let mut state = gl::GlState::new(&context, gl::Viewport {w: canvas.width(), h: canvas.height()});
 
-    // attribute arrays need to be packed with little-endinan bytes
-    // while texture data is big-endian X_X
     let packf32 = |v: &[f32]| { v.iter().flat_map(|el| el.to_le_bytes().to_vec()).collect::<Vec<u8>>() };
     let packu16 = |v: &[u16]| { v.iter().flat_map(|el| el.to_le_bytes().to_vec()).collect::<Vec<u8>>() };
 
@@ -142,17 +140,17 @@ pub fn animation_frame(
     y: f32,
     color: field::CellType,
     raidus: f32,
-    force_field: &field::Field,
+    w: f32,
+    h: f32,
     state: &mut gl::GlState,
     time_step: f32,
 ) -> Result<(), JsValue> {
     let uniforms = vec![
         ("field", gl::UniformData::Texture("display")),
-        ("external_force", gl::UniformData::Texture("force_field")),
         ("position", gl::UniformData::Vector2([x, y])),
         ("color", gl::UniformData::Scalar(color as u32 as f32)),
         ("radius", gl::UniformData::Scalar(raidus)),
-        ("field_size", gl::UniformData::Vector2([force_field.width as f32, force_field.height as f32])),
+        ("field_size", gl::UniformData::Vector2([w, h])),
         ("time_step", gl::UniformData::Scalar(time_step)),
     ].into_iter().collect::<HashMap<_, _>>();
 

@@ -4,26 +4,17 @@ uniform sampler2D field;
 
 varying vec2 frag_uv;
 
-const int EMPTY = 0x0;
-const int SAND = 0x1;
-const int WATER = 0x2;
+const float EMPTY = 10.;
+const float WATER = 20.;
+const float SAND = 30.;
 
 const vec4 error = vec4(1., 0., 0., 1.);
 
-int encodeCell(vec4 contents) {
-    float v = contents.x * 255.;
-    if (v == 0.) {
-        return EMPTY;
-    } else if (v == 1.) {
-        return SAND;
-    } else if (v == 2.) {
-        return WATER;
-    } else {
-        return -1;
-    }
+float encodeCell(vec4 contents) {
+    return contents.x * 255.;
 }
 
-vec4 cellColor(int cellType) {
+vec4 cellColor(float cellType) {
     if (cellType == EMPTY) {
         return vec4(0.0, 0.0, 0.0, 1.0);
     } else if (cellType == SAND) {
