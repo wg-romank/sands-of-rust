@@ -44,6 +44,12 @@ pub fn make_quad() -> ([f32; 8], [f32; 8], [u16; 6]) {
 }
 
 
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
+
 #[wasm_bindgen]
 pub fn display_shader() -> Result<gl::Program, JsValue> {
     let ctx = get_ctx("webgl")?;

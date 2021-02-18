@@ -1,12 +1,32 @@
 use wasm_bindgen::prelude::*;
 
-
 macro_rules! log {
     ( $( $t:tt )* ) => {
         web_sys::console::log_1(&format!( $( $t )* ).into());
     }
 }
 
+pub struct Cell {
+    value: u8,
+    name: &'static str,
+    color: &'static str,
+}
+
+impl Cell {
+    const fn new(value: u8, name: &'static str, color: &'static str) -> Cell {
+        Cell {value, name: name, color: color}
+    }
+
+    pub fn gen_shader() -> String {
+        cells.iter().fold(String::new(), |acc, c| acc + format!("const float {} = {}.;\n", c.name, c.value).as_str())
+    }
+}
+
+const cells: [Cell; 3] = [
+    Cell::new(10, "EMPTY", "black"),
+    Cell::new(20, "WATER", "black"),
+    Cell::new(30, "SAND", "black"),
+];
 
 #[wasm_bindgen]
 #[repr(u32)]
