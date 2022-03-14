@@ -8,14 +8,13 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-js-sys = "0.3.37"
-wasm-bindgen = "0.2.60"
-glsmrs = "0.1.1"
-strum = "0.20"
-strum_macros = "0.20"
+console_error_panic_hook = "*"
+js-sys = "0.3.56"
+wasm-bindgen = "0.2.79"
+glsmrs = { path = "../glsmrs" }
 
 [dependencies.web-sys]
-version = "0.3.39"
+version = "0.3.56"
 features = [
   'console',
   'Document',

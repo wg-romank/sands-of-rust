@@ -14,12 +14,13 @@ float encodeCell(vec4 contents) {
     return contents.x * 255.;
 }
 
+// TODO: cannot use exact match here on mobile :(
 vec4 cellColor(float cellType) {
-    if (cellType == EMPTY) {
+    if (abs(cellType - EMPTY) < 1.) {
         return vec4(0.0, 0.0, 0.0, 1.0);
-    } else if (cellType == SAND) {
+    } else if (abs(cellType - SAND) < 1.) {
         return vec4(vec3(168, 134, 42) / 255.0, 1.0);
-    } else if (cellType == WATER) {
+    } else if (abs(cellType - WATER) < 1.) {
         return vec4(vec3(103, 133, 193) / 255.0, 1.0);
     } else {
         return error;

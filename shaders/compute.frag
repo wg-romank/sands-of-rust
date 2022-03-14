@@ -134,6 +134,12 @@ vec4 codeNh(vec4 nh, int current) {
   return nh / 10.;
 }
 
+bool roughly_equals(vec3 nh, vec3 other) {
+  vec3 result = abs(nh - other);
+
+  return result.x < 0.1 && result.y < 0.1 && result.z < 0.1;
+}
+
 vec4 gravityBlackMagic(vec4 nh, int current) {
   // 1 2
   // 3 4
@@ -186,7 +192,7 @@ vec4 gravityBlackMagic(vec4 nh, int current) {
     // ~ ~  ~ ~
     // ~ L  L ~
     return nh.xywz;
-  } else if (codeNh(nh, current).yzw == vec3(1, 1, 1)) {
+  } else if (roughly_equals(codeNh(nh, current).yzw, vec3(1, 1, 1))) {
     // * ~  ~ ~
     // ~ ~  * ~
     return nh.zyxw;
