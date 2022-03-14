@@ -139,7 +139,7 @@ impl Render {
             .ok_or(format!("unable to find canvas {}", canvas_name))?;
         let ctx = Ctx::new(gl::util::get_ctx_from_canvas(&canvas, "webgl")?)?;
 
-        let empty_bytes = field::Field::new(w as usize, h as usize);
+        let empty_bytes = field::Field::new_empty(w as usize, h as usize, CellType::Empty);
 
         let mesh = initial_state(&ctx)?;
 

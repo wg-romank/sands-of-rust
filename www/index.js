@@ -2,8 +2,8 @@ import * as sor from "sands-of-rust";
 
 const canvas = document.getElementById("sands-of-rust-canvas");
 const brect = canvas.getBoundingClientRect();
-const w = 512;
-const h = 512;
+const w = 128;
+const h = 128;
 
 canvas.setAttribute('width', brect.width);
 canvas.setAttribute('height', brect.height);
@@ -52,6 +52,7 @@ canvas.addEventListener('pointermove', ev => {
 
 canvas.addEventListener('pointerup', ev => {
   isDown = false;
+  r.brush_change_radius(0);
 });
 
 document.addEventListener('keydown', ev => {
