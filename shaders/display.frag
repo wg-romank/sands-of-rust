@@ -29,9 +29,7 @@ vec4 cellColor(vec4 pixel) {
 }
 
 void main() {
-    // cursor offsets from top left
-    // but gl coordinates offset from bottom left
-    vec2 uv = vec2(frag_uv.x, 1.0 - frag_uv.y);
+    vec2 uv = vec2(frag_uv.x, frag_uv.y);
     vec4 pixel = texture2D(field, uv);
     vec4 cell_color = cellColor(pixel);
 

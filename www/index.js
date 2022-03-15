@@ -43,7 +43,10 @@ canvas.addEventListener('pointermove', ev => {
     const boundingRect = canvas.getBoundingClientRect();
 
     const canvasLeft = (ev.clientX - boundingRect.left) / boundingRect.width;
-    const canvasTop = (ev.clientY - boundingRect.top) / boundingRect.height;
+    // cursor offsets from top left
+    // but gl coordinates offset from bottom left
+    // can check coordinates in QUAD UVs
+    const canvasTop = 1 - (ev.clientY - boundingRect.top) / boundingRect.height;
 
     r.brush_move_to(canvasLeft, canvasTop);
     r.brush_change_radius(2);
