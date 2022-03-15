@@ -1,4 +1,3 @@
-use field::CellType;
 use gl::GL;
 use gl::Ctx;
 use gl::Pipeline;
@@ -85,14 +84,14 @@ pub fn initial_state(
 pub struct BrushStroke {
     x: f32,
     y: f32,
-    color: field::CellType,
+    value: f32,
     radius: f32,
 }
 
 #[wasm_bindgen]
 impl BrushStroke {
-    pub fn new(x: f32, y: f32, color: field::CellType, radius: f32) -> Self {
-        Self { x, y, color, radius }
+    pub fn new(x: f32, y: f32, value: f32, radius: f32) -> Self {
+        Self { x, y, value, radius }
     }
 
     pub fn move_to(&mut self, x: f32, y: f32) {
@@ -100,8 +99,8 @@ impl BrushStroke {
         self.y = y;
     }
 
-    pub fn change_color(&mut self, color: field::CellType) {
-        self.color = color;
+    pub fn change_intesity(&mut self, value: f32) {
+        self.value = value;
     }
 
     pub fn change_radius(&mut self, radius: f32) {
@@ -111,7 +110,7 @@ impl BrushStroke {
 
 impl Default for BrushStroke {
     fn default() -> Self {
-        Self { x: 0., y: 0., color: field::CellType::Empty, radius: 0. }
+        Self { x: 0., y: 0., value: 0., radius: 0. }
     }
 }
 
@@ -127,19 +126,20 @@ struct Render {
     display_fb: EmptyFramebuffer,
     state_fb: ColorFramebuffer,
     temp_fb: ColorFramebuffer,
-    dimensions: [f32; 2]
+    dimensions: [f32; 2],
+    sand_speed: f32,
 }
 
 #[wasm_bindgen]
 impl Render {
-    pub fn new(canvas_name: &str, w: u32, h: u32) -> Result<Render, JsValue> {
+    pub fn new(canvas_name: &str, w: u32, h: u32, sand_speed: f32) -> Result<Render, JsValue> {
         console_error_panic_hook::set_once();
 
         let canvas = gl::util::get_canvas(canvas_name)
             .ok_or(format!("unable to find canvas {}", canvas_name))?;
         let ctx = Ctx::new(gl::util::get_ctx_from_canvas(&canvas, "webgl")?)?;
 
-        let empty_bytes = field::Field::new_empty(w as usize, h as usize, CellType::Empty);
+        let empty_bytes = field::Field::new_empty(w as usize, h as usize);
 
         let mesh = initial_state(&ctx)?;
 
@@ -173,7 +173,8 @@ impl Render {
             display_fb,
             state_fb,
             temp_fb,
-            dimensions: [w as f32, h as f32]
+            dimensions: [w as f32, h as f32],
+            sand_speed,
         })
     }
 
@@ -185,14 +186,15 @@ impl Render {
         self.brush.change_radius(radius)
     }
 
-    pub fn brush_change_color(&mut self, color: CellType) {
-        self.brush.change_color(color)
+    pub fn brush_change_intensity(&mut self, value: f32) {
+        self.brush.change_intesity(value)
     }
 
     pub fn frame(&mut self, time_step: f32) -> Result<(), String> {
         let uniforms = vec![
             ("position", gl::UniformData::Vector2([self.brush.x, self.brush.y])),
-            ("color", gl::UniformData::Scalar(self.brush.color as u32 as f32)),
+            ("color", gl::UniformData::Scalar(self.brush.value)),
+            ("sand_speed", gl::UniformData::Scalar(self.sand_speed)),
             ("radius", gl::UniformData::Scalar(self.brush.radius)),
             ("field", gl::UniformData::Texture(self.temp_fb.color_slot())),
             ("field_size", gl::UniformData::Vector2(self.dimensions)),

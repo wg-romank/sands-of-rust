@@ -7,7 +7,7 @@ uniform float time_step;
 uniform vec2 position;
 uniform float color;
 uniform float radius;
-uniform float brush_enabled;
+uniform float sand_speed;
 
 varying vec2 frag_uv;
 
@@ -31,8 +31,8 @@ vec4 texture(vec2 uv, vec2 offset) {
   if (force_component != 0.0) {
     return vec4(force_component, 0., 0., 0.);
   } else {
-    return textureOffset(uv, offset);
-  }
+    return vec4(textureOffset(uv, offset).x, 0., 0., 0.);
+  } 
 }
 
 int gridIndex(vec2 coord) {
@@ -138,104 +138,55 @@ vec4 neighborhood(vec2 uv, int gid) {
   return vec4(c1.x, c2.x, c3.x, c4.x);
 }
 
-vec4 codeNh(vec4 nh, int current) {
-  return nh / 10.;
-}
-
-bool roughly_equals(vec3 nh, vec3 other) {
-  vec3 result = abs(nh - other);
-
-  return result.x < 0.1 && result.y < 0.1 && result.z < 0.1;
-}
-
-vec4 gravityBlackMagic(vec4 nh, int current) {
+vec4 gravityBlackMagic(vec4 nh) {
   // 1 2
   // 3 4
   
   // x y
   // z w
 
-  // L liquid -> 2
-  // * particle -> 1
+  // * particle -> > 0
   // ~ empty -> 0
 
-  // particles (~) heavier than liquid (L)
-  // empty space lighter than particles (*) and liquid (L)
+  // empty space lighter than particles (*)
+  float ss = sand_speed / 255.;
 
-  // for each iteration we assign heavy particle (*)
-  // oil is ligher than water, it floats atop
-  // oil is (L) while water is (*) and everyhing that is heavier than water is (*)
-
-  // todo: walls?
-
-  if (codeNh(nh, current) == vec4(2, 2, 2, 1)) {
-    // L L  L L
-    // L ~  ~ L
-    return nh.xywz;
-  } else if (codeNh(nh, current) == vec4(2, 2, 1, 2)) {
-    // L L  L L
-    // ~ L  L ~
-    return nh.xywz;
-  } else if (codeNh(nh, current) == vec4(2, 1, 3, 1)) {
-    // L ~  ~ ~
-    // * ~  * L
-    return nh.wyzx;
-  } else if (codeNh(nh, current) == vec4(1, 2, 1, 3)) {
-    // ~ L  ~ ~
-    // ~ *  L *
-    return nh.xzyw;
-  } else if (codeNh(nh, current) == vec4(2, 1, 3, 3)) {
-    // L ~  ~ L
-    // * *  * *
-    return nh.yxzw;
-  } else if (codeNh(nh, current) == vec4(1, 2, 3, 3)) {
-    // ~ L  L ~
-    // * *  * *
-    return nh.yxzw;
-  } else if (codeNh(nh, current) == vec4(1, 1, 2, 1)) {
-    // ~ ~  ~ ~
-    // L ~  ~ L
-    return nh.xywz;
-  } else if (codeNh(nh, current) == vec4(1, 1, 1, 2)) {
-    // ~ ~  ~ ~
-    // ~ L  L ~
-    return nh.xywz;
-  } else if (roughly_equals(codeNh(nh, current).yzw, vec3(1, 1, 1))) {
+  if (nh.x > nh.z && nh.yw == vec2(0., 0.) && nh.z + ss < 1.) {
     // * ~  ~ ~
     // ~ ~  * ~
-    return nh.zyxw;
-  } else if (codeNh(nh, current).xzw == vec3(1, 1, 1)) {
+    return vec4(nh.x - ss, nh.y, nh.z + ss, nh.w);
+  } else if (nh.y > nh.w && nh.xz == vec2(0., 0.) && nh.w + ss < 1.) {
     // ~ *  ~ ~
     // ~ ~  ~ *
-    return nh.xwzy;
-  } else if (codeNh(nh, current).xz == vec2(1, 1)) {
-    // ~ *  ~ ~
-    // ~ *  * *
-    return nh.xzyw;
-  } else if (codeNh(nh, current).zw == vec2(1, 1)) {
-    // * *  ~ ~
-    // ~ ~  * *
-    return nh.zwxy;
-  } else if (codeNh(nh, current).xw == vec2(1, 1)) {
+    return vec4(nh.x, nh.y - ss, nh.z, nh.w + ss);
+  } else if (nh.y > 0. && nh.z > nh.w && nh.x == 0. && nh.w + ss < 1.) {
     // ~ *  ~ ~
     // * ~  * *
-    return nh.xwzy;
-  } else if (codeNh(nh, current).yz == vec2(1, 1)) {
+    return vec4(nh.x, nh.y - ss, nh.z, nh.w + ss);
+  } else if (nh.x > 0. && nh.w > nh.z && nh.y == 0. && nh.z + ss < 1.) {
     // * ~  ~ ~
     // ~ *  * *
-    return nh.zyxw;
-  } else if (codeNh(nh, current).yw == vec2(1, 1)) {
+    return vec4(nh.x - ss, nh.y, nh.z + ss, nh.w);
+  } else if (nh.y > 0. && nh.z < nh.w && nh.x == 0. && nh.z + ss < 1.) {
+    // ~ *  ~ ~
+    // ~ *  * *
+    return vec4(nh.x, nh.y - ss, nh.z + ss, nh.w);
+  } else if (nh.x > 0. && nh.z > nh.w && nh.y == 0. && nh.w + ss < 1.) {
     // * ~  ~ ~
     // * ~  * *
-    return nh.wyzx;
-  } else if (codeNh(nh, current).z == 1.) {
+    return vec4(nh.x - ss, nh.y, nh.z, nh.w + ss);
+  } else if (nh.x > 0. && nh.y > 0. && nh.w > nh.z && nh.z + ss < 1.) {
     // * *  ~ *
     // ~ *  * *
-    return nh.zyxw;
-  } else if (codeNh(nh, current).w == 1.) {
+    return vec4(nh.x - ss, nh.y, nh.z + ss, nh.w);
+  } else if (nh.x > 0. && nh.y > 0. && nh.z > nh.w && nh.w + ss < 1.) {
     // * *  * ~
     // * ~  * *
-    return nh.xwzy;
+    return vec4(nh.x, nh.y - ss, nh.z, nh.w + ss);
+  } else if (nh.x > 0. && nh.y > 0. && nh.x > nh.z && nh.y > nh.w && nh.w + ss < 1. && nh.z + ss < 1.) {
+    // * *  ~ ~
+    // ~ ~  * *
+    return vec4(nh.x - ss, nh.y - ss, nh.z + ss, nh.w + ss);
   } else {
     return nh;
   }
@@ -266,7 +217,7 @@ void main() {
 
   // values passed in texture are scaled from 0 to 1
   // for (int i = 0; i < 10; i = i + 1) {
-  vec4 shiftedMask = gravityBlackMagic(mask * 255., 0) / 255.;
+  vec4 shiftedMask = gravityBlackMagic(mask);
   // }
 
   gl_FragColor = decodeNeighborhood(gid, shiftedMask);
