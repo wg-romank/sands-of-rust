@@ -15,7 +15,8 @@ float encodeCell(vec4 contents) {
 }
 
 // TODO: cannot use exact match here on mobile :(
-vec4 cellColor(float cellType) {
+vec4 cellColor(vec4 pixel) {
+    float cellType = encodeCell(pixel);
     if (abs(cellType - EMPTY) < 1.) {
         return vec4(0.0, 0.0, 0.0, 1.0);
     } else if (abs(cellType - SAND) < 1.) {
@@ -28,5 +29,9 @@ vec4 cellColor(float cellType) {
 }
 
 void main() {
-    gl_FragColor = cellColor(encodeCell(texture2D(field, vec2(frag_uv.x, 1.0 - frag_uv.y))));
+    vec2 uv = vec2(frag_uv.x, 1.0 - frag_uv.y);
+    vec4 pixel = texture2D(field, uv);
+    vec4 cell_color = cellColor(pixel);
+
+    gl_FragColor = cell_color;
 }

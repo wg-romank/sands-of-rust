@@ -178,15 +178,15 @@ impl Render {
     }
 
     pub fn brush_move_to(&mut self, x: f32, y: f32) {
-        self.brush.move_to(x, y);
+        self.brush.move_to(x, y)
     }
 
     pub fn brush_change_radius(&mut self, radius: f32) {
-        self.brush.change_radius(radius);
+        self.brush.change_radius(radius)
     }
 
     pub fn brush_change_color(&mut self, color: CellType) {
-        self.brush.change_color(color);
+        self.brush.change_color(color)
     }
 
     pub fn frame(&mut self, time_step: f32) -> Result<(), String> {

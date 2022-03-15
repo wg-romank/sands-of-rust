@@ -7,23 +7,31 @@ uniform float time_step;
 uniform vec2 position;
 uniform float color;
 uniform float radius;
+uniform float brush_enabled;
 
 varying vec2 frag_uv;
 
 vec4 textureOffset(vec2 uv, vec2 offset) {
-  // todo: handle borders?
-  // handling with clamp currently
-  vec2 pt = position - uv;
+  return texture2D(field, (uv * field_size + offset) / field_size);
+}
+
+float brush(vec2 uv) {
+  vec2 pt = position - uv; // adjusted for center of brush
   float radius_adjusted = radius / field_size.x;
   float color_norm = color / 255.;
 
-  float img_component = texture2D(field, (uv * field_size + offset) / field_size).x;
-  float force_component = clamp(sign(pow(radius_adjusted, 2.) - dot(pt, pt)), 0., 1.) * color_norm;
+  float in_circle = sign(pow(radius_adjusted, 2.) - dot(pt, pt));
+  float force_component = clamp(in_circle, 0., 1.) * color_norm;
 
+  return force_component;
+}
+
+vec4 texture(vec2 uv, vec2 offset) {
+  float force_component = brush(uv);
   if (force_component != 0.0) {
     return vec4(force_component, 0., 0., 0.);
   } else {
-    return vec4(img_component, 0., 0., 0.);
+    return textureOffset(uv, offset);
   }
 }
 
@@ -122,10 +130,10 @@ vec4 neighborhood(vec2 uv, int gid) {
   // c1 c2
   // c3 c4
  
-  vec4 c1 = textureOffset(uv, offsetC1);
-  vec4 c2 = textureOffset(uv, offsetC2);
-  vec4 c3 = textureOffset(uv, offsetC3);
-  vec4 c4 = textureOffset(uv, offsetC4);
+  vec4 c1 = texture(uv, offsetC1);
+  vec4 c2 = texture(uv, offsetC2);
+  vec4 c3 = texture(uv, offsetC3);
+  vec4 c4 = texture(uv, offsetC4);
 
   return vec4(c1.x, c2.x, c3.x, c4.x);
 }
