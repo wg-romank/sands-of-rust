@@ -6,28 +6,6 @@ macro_rules! log {
     }
 }
 
-pub struct Cell {
-    value: u8,
-    name: &'static str,
-    color: &'static str,
-}
-
-impl Cell {
-    const fn new(value: u8, name: &'static str, color: &'static str) -> Cell {
-        Cell {value, name: name, color: color}
-    }
-
-    pub fn gen_shader() -> String {
-        cells.iter().fold(String::new(), |acc, c| acc + format!("const float {} = {}.;\n", c.name, c.value).as_str())
-    }
-}
-
-const cells: [Cell; 3] = [
-    Cell::new(10, "EMPTY", "black"),
-    Cell::new(20, "WATER", "black"),
-    Cell::new(30, "SAND", "black"),
-];
-
 #[wasm_bindgen]
 #[repr(u32)]
 #[derive(PartialEq, Clone, Copy, Debug)]
@@ -37,8 +15,6 @@ pub enum CellType {
     Sand = 30,
 }
 
-
-#[wasm_bindgen]
 pub struct Field {
     pub width: usize,
     pub height: usize,
@@ -52,7 +28,6 @@ fn get_xy(w: usize, h: usize, idx: usize) -> (f32, f32) {
     (row as f32 / h as f32, col as f32 / w as f32)
 }
 
-#[wasm_bindgen]
 impl Field {
     pub fn new(w: usize, h: usize) -> Field {
         let width = w;
@@ -275,34 +250,6 @@ impl fmt::Display for Field {
     }
 }
 
-struct FieldSimple {
-    pub width: usize,
-    pub height: usize,
-    values: Vec<u32>,
-}
-
-impl FieldSimple {
-    pub fn new(w: usize, h: usize) -> FieldSimple {
-        let width = w;
-        let height = h;
-        let values = (0..(width * height)).into_iter().map(|idx| {
-            let (x, y) = get_xy(width, height, idx);
-
-            let rad = (x - 0.5).powf(2.) + (y - 0.5).powf(2.);
-            if  rad <= (0.3 as f32).powf(2.0) && rad >= (0.2 as f32).powf(2.0)  { 256 * 256 * 256 } else { 0 }
-        }).collect::<Vec<u32>>();
-
-        FieldSimple { width, height, values }
-    }
-
-    pub fn bytes(&self) -> Vec<u8> {
-        self.values
-            .iter()
-            .flat_map(|e: &u32| e.to_be_bytes().to_vec() )
-            .collect()
-    }
-}
-
 #[test]
 fn test_grid_idx() {
     for i in 0..10 {
@@ -380,17 +327,9 @@ fn test_step() {
 }
 
 #[test]
-fn understand_modulus() {
-    assert_eq!(0 % 2, 0);
-    assert_eq!(1 % 2, 1);
-    assert_eq!(2 % 2, 0);
-    assert_eq!(3 % 2, 1);
-}
-
-#[test]
 fn understand_conversion() {
     use CellType::*;
 
-    assert_eq!(Water as u32, 2);
-    assert_eq!(Water as u32 as f32, 2.);
+    assert_eq!(Water as u32, 20);
+    assert_eq!(Water as u32 as f32, 20.);
 }
