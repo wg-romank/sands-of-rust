@@ -1,3 +1,4 @@
+use field::CellType;
 use gl::GL;
 use gl::Ctx;
 use gl::Pipeline;
@@ -10,6 +11,7 @@ use gl::texture::EmptyFramebuffer;
 use gl::texture::Framebuffer;
 use gl::texture::InternalFormat;
 use gl::texture::TextureSpec;
+use gl::texture::UploadedTexture;
 use gl::texture::Viewport;
 use wasm_bindgen::prelude::*;
 
@@ -18,6 +20,10 @@ use web_sys;
 use std::collections::HashMap;
 
 use glsmrs as gl;
+
+use crate::field::RULES;
+use crate::field::patterns_texture;
+use crate::field::rules_texture;
 
 mod field;
 
@@ -84,14 +90,14 @@ pub fn initial_state(
 pub struct BrushStroke {
     x: f32,
     y: f32,
-    value: f32,
+    color: CellType,
     radius: f32,
 }
 
 #[wasm_bindgen]
 impl BrushStroke {
-    pub fn new(x: f32, y: f32, value: f32, radius: f32) -> Self {
-        Self { x, y, value, radius }
+    pub fn new(x: f32, y: f32, color: CellType, radius: f32) -> Self {
+        Self { x, y, color, radius }
     }
 
     pub fn move_to(&mut self, x: f32, y: f32) {
@@ -99,8 +105,8 @@ impl BrushStroke {
         self.y = y;
     }
 
-    pub fn change_intesity(&mut self, value: f32) {
-        self.value = value;
+    pub fn change_color(&mut self, color: CellType) {
+        self.color = color;
     }
 
     pub fn change_radius(&mut self, radius: f32) {
@@ -110,7 +116,7 @@ impl BrushStroke {
 
 impl Default for BrushStroke {
     fn default() -> Self {
-        Self { x: 0., y: 0., value: 0., radius: 0. }
+        Self { x: 0., y: 0., color: CellType::Empty, radius: 0. }
     }
 }
 
@@ -126,20 +132,21 @@ struct Render {
     display_fb: EmptyFramebuffer,
     state_fb: ColorFramebuffer,
     temp_fb: ColorFramebuffer,
+    patterns_texture: UploadedTexture,
+    rules_texture: UploadedTexture,
     dimensions: [f32; 2],
-    sand_speed: f32,
 }
 
 #[wasm_bindgen]
 impl Render {
-    pub fn new(canvas_name: &str, w: u32, h: u32, sand_speed: f32) -> Result<Render, JsValue> {
+    pub fn new(canvas_name: &str, w: u32, h: u32) -> Result<Render, JsValue> {
         console_error_panic_hook::set_once();
 
         let canvas = gl::util::get_canvas(canvas_name)
             .ok_or(format!("unable to find canvas {}", canvas_name))?;
         let ctx = Ctx::new(gl::util::get_ctx_from_canvas(&canvas, "webgl")?)?;
 
-        let empty_bytes = field::Field::new_empty(w as usize, h as usize);
+        let empty_bytes = field::Field::new_empty(w as usize, h as usize, CellType::Empty);
 
         let mesh = initial_state(&ctx)?;
 
@@ -153,6 +160,9 @@ impl Render {
         );
 
         let vp = Viewport::new(w, h);
+
+        let patterns_texture = patterns_texture(&ctx)?;
+        let rules_texture = rules_texture(&ctx)?;
 
         let texture_spec = TextureSpec::pixel(ColorFormat(GL::RGBA), [w, h]);
         let state_texture = texture_spec.upload(&ctx, InternalFormat(GL::UNSIGNED_BYTE), None)?;
@@ -173,8 +183,9 @@ impl Render {
             display_fb,
             state_fb,
             temp_fb,
+            patterns_texture,
+            rules_texture,
             dimensions: [w as f32, h as f32],
-            sand_speed,
         })
     }
 
@@ -186,15 +197,17 @@ impl Render {
         self.brush.change_radius(radius)
     }
 
-    pub fn brush_change_intensity(&mut self, value: f32) {
-        self.brush.change_intesity(value)
+    pub fn brush_change_color(&mut self, color: CellType) {
+        self.brush.change_color(color);
     }
 
     pub fn frame(&mut self, time_step: f32) -> Result<(), String> {
         let uniforms = vec![
+            ("num_rules", gl::UniformData::Scalar(RULES.len() as f32)),
+            ("patterns", gl::UniformData::Texture(&mut self.patterns_texture)),
+            ("rules", gl::UniformData::Texture(&mut self.rules_texture)),
             ("position", gl::UniformData::Vector2([self.brush.x, self.brush.y])),
-            ("color", gl::UniformData::Scalar(self.brush.value)),
-            ("sand_speed", gl::UniformData::Scalar(self.sand_speed)),
+            ("color", gl::UniformData::Scalar(self.brush.color as u32 as f32)),
             ("radius", gl::UniformData::Scalar(self.brush.radius)),
             ("field", gl::UniformData::Texture(self.temp_fb.color_slot())),
             ("field_size", gl::UniformData::Vector2(self.dimensions)),

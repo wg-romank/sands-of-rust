@@ -4,12 +4,11 @@ const canvas = document.getElementById("sands-of-rust-canvas");
 const brect = canvas.getBoundingClientRect();
 const w = 128;
 const h = 128;
-const sandSpeed = 10;
 
 canvas.setAttribute('width', brect.width);
 canvas.setAttribute('height', brect.height);
 
-let r = sor.Render.new("sands-of-rust-canvas", w, h, sandSpeed);
+let r = sor.Render.new("sands-of-rust-canvas", w, h);
 
 let lastCall = 0;
 let cum = 0;
@@ -62,9 +61,9 @@ canvas.addEventListener('pointerup', ev => {
 document.addEventListener('keydown', ev => {
   console.log("Key down ", ev);
   if (ev.key == "1") {
-    r.brush_change_intensity(2 * sandSpeed);
+    r.brush_change_color(sor.CellType.Sand)
   } else if (ev.key == "2") {
-    r.brush_change_intensity(0);
+    r.brush_change_color(sor.CellType.Empty)
   }
 })
 

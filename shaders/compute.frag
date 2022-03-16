@@ -4,10 +4,14 @@ uniform sampler2D field;
 uniform vec2 field_size;
 uniform float time_step;
 
+uniform sampler2D patterns;
+uniform sampler2D rules;
+
+uniform float num_rules;
+
 uniform vec2 position;
 uniform float color;
 uniform float radius;
-uniform float sand_speed;
 
 varying vec2 frag_uv;
 
@@ -31,7 +35,7 @@ vec4 texture(vec2 uv, vec2 offset) {
   if (force_component != 0.0) {
     return vec4(force_component, 0., 0., 0.);
   } else {
-    return vec4(textureOffset(uv, offset).x, 0., 0., 0.);
+    return textureOffset(uv, offset);
   } 
 }
 
@@ -85,7 +89,7 @@ int timedGridIndex(vec2 coord, float time_step) {
   return -1;
 }
 
-vec4 neighborhood(vec2 uv, int gid) {
+mat4 neighborhood(vec2 uv, int gid) {
   // time goes 0, 1, 0, 1, ...
   // need to apply mask based on own coordinates
   // instead of same pattern over whole picture
@@ -135,61 +139,7 @@ vec4 neighborhood(vec2 uv, int gid) {
   vec4 c3 = texture(uv, offsetC3);
   vec4 c4 = texture(uv, offsetC4);
 
-  return vec4(c1.x, c2.x, c3.x, c4.x);
-}
-
-vec4 gravityBlackMagic(vec4 nh) {
-  // 1 2
-  // 3 4
-  
-  // x y
-  // z w
-
-  // * particle -> > 0
-  // ~ empty -> 0
-
-  // empty space lighter than particles (*)
-  float ss = sand_speed / 255.;
-
-  if (nh.x > nh.z && nh.yw == vec2(0., 0.) && nh.z + ss < 1.) {
-    // * ~  ~ ~
-    // ~ ~  * ~
-    return vec4(nh.x - ss, nh.y, nh.z + ss, nh.w);
-  } else if (nh.y > nh.w && nh.xz == vec2(0., 0.) && nh.w + ss < 1.) {
-    // ~ *  ~ ~
-    // ~ ~  ~ *
-    return vec4(nh.x, nh.y - ss, nh.z, nh.w + ss);
-  } else if (nh.y > 0. && nh.z > nh.w && nh.x == 0. && nh.w + ss < 1.) {
-    // ~ *  ~ ~
-    // * ~  * *
-    return vec4(nh.x, nh.y - ss, nh.z, nh.w + ss);
-  } else if (nh.x > 0. && nh.w > nh.z && nh.y == 0. && nh.z + ss < 1.) {
-    // * ~  ~ ~
-    // ~ *  * *
-    return vec4(nh.x - ss, nh.y, nh.z + ss, nh.w);
-  } else if (nh.y > 0. && nh.z < nh.w && nh.x == 0. && nh.z + ss < 1.) {
-    // ~ *  ~ ~
-    // ~ *  * *
-    return vec4(nh.x, nh.y - ss, nh.z + ss, nh.w);
-  } else if (nh.x > 0. && nh.z > nh.w && nh.y == 0. && nh.w + ss < 1.) {
-    // * ~  ~ ~
-    // * ~  * *
-    return vec4(nh.x - ss, nh.y, nh.z, nh.w + ss);
-  } else if (nh.x > 0. && nh.y > 0. && nh.w > nh.z && nh.z + ss < 1.) {
-    // * *  ~ *
-    // ~ *  * *
-    return vec4(nh.x - ss, nh.y, nh.z + ss, nh.w);
-  } else if (nh.x > 0. && nh.y > 0. && nh.z > nh.w && nh.w + ss < 1.) {
-    // * *  * ~
-    // * ~  * *
-    return vec4(nh.x, nh.y - ss, nh.z, nh.w + ss);
-  } else if (nh.x > 0. && nh.y > 0. && nh.x > nh.z && nh.y > nh.w && nh.w + ss < 1. && nh.z + ss < 1.) {
-    // * *  ~ ~
-    // ~ ~  * *
-    return vec4(nh.x - ss, nh.y - ss, nh.z + ss, nh.w + ss);
-  } else {
-    return nh;
-  }
+  return mat4(c1, c2, c3, c4);
 }
 
 vec4 vectorId(int gid) {
@@ -204,21 +154,49 @@ vec4 vectorId(int gid) {
   }
 }
 
-vec4 decodeNeighborhood(int gid, vec4 nh) {
-  float s = dot(vectorId(gid), nh);
+vec4 gravityBlackMagic(mat4 nh, int gid) {
+  // 1 2
+  // 3 4
+  // todo: long loop + break
+  for (float i = 0.; i < 18.; i += 2.) {
+    // todo: figure out how to query
+    vec2 off1 = (vec2(0, 0) + vec2(0, i)) / num_rules;
+    vec2 off2 = (vec2(0, 1) + vec2(0, i)) / num_rules;
+    vec2 off3 = (vec2(1, 0) + vec2(0, i)) / num_rules;
+    vec2 off4 = (vec2(1, 1) + vec2(0, i)) / num_rules;
 
-  return vec4(s, 0, 0, 0);
+    mat4 pattern = mat4(
+      texture2D(patterns, off1),
+      texture2D(patterns, off2),
+      texture2D(patterns, off3),
+      texture2D(patterns, off4)
+    );
+
+    if (pattern == nh) {
+      if (gid == 1) {
+        return texture2D(rules, off1);
+      } else if (gid == 2) {
+        return texture2D(rules, off2);
+      } else if (gid == 3) {
+        return texture2D(rules, off3);
+      } else if (gid == 4) {
+        return texture2D(rules, off4);
+      }
+    }
+  }
+
+  // todo: check
+  return nh * vectorId(gid);
 }
 
 void main() {
   int gid = timedGridIndex(frag_uv, time_step);
 
-  vec4 mask = neighborhood(frag_uv, gid);
+  mat4 nh = neighborhood(frag_uv, gid);
 
   // values passed in texture are scaled from 0 to 1
   // for (int i = 0; i < 10; i = i + 1) {
-  vec4 shiftedMask = gravityBlackMagic(mask);
+  // gl_FragColor = nh * vectorId(gid);
+  gl_FragColor = gravityBlackMagic(nh, gid);
   // }
-
-  gl_FragColor = decodeNeighborhood(gid, shiftedMask);
 } 
