@@ -15,8 +15,6 @@ use gl::texture::UploadedTexture;
 use gl::texture::Viewport;
 use wasm_bindgen::prelude::*;
 
-use wasm_bindgen::JsCast;
-use web_sys;
 use std::collections::HashMap;
 
 use glsmrs as gl;
@@ -122,7 +120,7 @@ impl Default for BrushStroke {
 
 
 #[wasm_bindgen]
-struct Render {
+pub struct Render {
     pipeline: Pipeline,
     mesh: Mesh,
     brush: BrushStroke,

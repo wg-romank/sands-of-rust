@@ -1,15 +1,12 @@
-use glsmrs::{texture::{UploadedTexture, TextureSpec, ColorFormat}, Ctx};
+use glsmrs::{
+    texture::{ColorFormat, TextureSpec, UploadedTexture},
+    Ctx,
+};
 use wasm_bindgen::prelude::*;
-
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
 
 #[wasm_bindgen]
 #[repr(u32)]
-#[derive(PartialEq, Clone, Copy, Debug)]
+#[derive(Hash, Eq, PartialEq, Clone, Copy, Debug)]
 pub enum CellType {
     Empty = 10,
     Water = 20,
@@ -22,6 +19,7 @@ pub struct Field {
     values: Vec<CellType>,
 }
 
+#[cfg(test)]
 fn get_xy(w: usize, h: usize, idx: usize) -> (f32, f32) {
     let row = idx / w;
     let col = idx % w;
@@ -30,6 +28,7 @@ fn get_xy(w: usize, h: usize, idx: usize) -> (f32, f32) {
 }
 
 impl Field {
+    #[cfg(test)]
     pub fn new(w: usize, h: usize) -> Field {
         let width = w;
         let height = h;
@@ -67,31 +66,6 @@ impl Field {
             values,
         }
     }
-}
-
-impl Field {
-    pub fn get_idx(&self, row: usize, col: usize) -> usize {
-        row * self.width + col
-    }
-
-    pub fn get_rc_from_xy(&self, x: f32, y: f32) -> (usize, usize) {
-        let row = (x * self.width as f32) as usize;
-        let col = (y * self.height as f32) as usize;
-
-        (row, col)
-    }
-
-    pub fn xy(&self, idx: usize) -> (f32, f32) {
-        get_xy(self.width, self.height, idx)
-    }
-
-    pub fn dx(&self) -> f32 {
-        1. / self.height as f32
-    }
-
-    pub fn dy(&self) -> f32 {
-        1. / self.width as f32
-    }
 
     pub fn bytes(&self) -> Vec<u8> {
         self.values
@@ -101,38 +75,66 @@ impl Field {
     }
 }
 
-use CellType::*;
+#[cfg(test)]
+impl Field {
+    pub fn get_idx(&self, row: usize, col: usize) -> usize {
+        row * self.width + col
+    }
+}
+
 use glsmrs::GL;
+use CellType::*;
 
 pub fn patterns_texture(ctx: &Ctx) -> Result<UploadedTexture, String> {
     let spec = TextureSpec::pixel(ColorFormat(GL::RGBA), [2 * 9, 2]);
-    let data = &PATTERNS 
+
+    let mut line1 = PATTERNS
         .iter()
-        .flat_map(|ar| { ar.iter().flat_map(|e: &CellType| (*e as u32).to_le_bytes().to_vec()) })
+        .flat_map(|ar| {
+            [ar[0], ar[1]]
+                .iter()
+                .flat_map(|e| (*e as u32).to_le_bytes().to_vec())
+                .collect::<Vec<u8>>()
+        })
         .collect::<Vec<u8>>();
-    log!("data len {:?}", data.len());
-    spec.upload_u8(&ctx, &data)
+
+    let line2 = &PATTERNS
+        .iter()
+        .flat_map(|ar| {
+            [ar[2], ar[3]]
+                .iter()
+                .flat_map(|e| (*e as u32).to_le_bytes().to_vec())
+                .collect::<Vec<u8>>()
+        })
+        .collect::<Vec<u8>>();
+
+    line1.extend(line2);
+
+    spec.upload_u8(&ctx, &line1)
 }
 
 pub fn rules_texture(ctx: &Ctx) -> Result<UploadedTexture, String> {
     let spec = TextureSpec::pixel(ColorFormat(GL::RGBA), [2 * 9, 2]);
     let data = &RULES
         .iter()
-        .flat_map(|ar| { ar.iter().flat_map(|e: &CellType| (*e as u32).to_le_bytes().to_vec()) })
+        .flat_map(|ar| {
+            ar.iter()
+                .flat_map(|e: &CellType| (*e as u32).to_le_bytes().to_vec())
+        })
         .collect::<Vec<u8>>();
     spec.upload_u8(&ctx, &data)
 }
 
 pub const PATTERNS: [[CellType; 4]; 9] = [
-    [Sand, Empty, Empty, Empty],
-    [Sand, Sand, Sand, Empty],
-    [Sand, Sand, Empty, Empty],
-    [Empty, Sand, Sand, Empty],
-    [Empty, Sand, Empty, Empty],
-    [Sand, Sand, Empty, Sand],
-    [Sand, Empty, Empty, Sand],
-    [Sand, Empty, Sand, Empty],
-    [Empty, Sand, Empty, Sand],
+    [Sand, Empty, Empty, Empty], // i = 0
+    [Sand, Sand, Sand, Empty],  // i = 2
+    [Sand, Sand, Empty, Empty], // i = 4
+    [Empty, Sand, Sand, Empty], // i = 6
+    [Empty, Sand, Empty, Empty], // i = 8
+    [Sand, Sand, Empty, Sand], // i != 10
+    [Sand, Empty, Empty, Sand], // i != 12
+    [Sand, Empty, Sand, Empty], // i != 14
+    [Empty, Sand, Empty, Sand], // i == 16
 ];
 
 pub const RULES: [[CellType; 4]; 9] = [
@@ -147,22 +149,16 @@ pub const RULES: [[CellType; 4]; 9] = [
     [Empty, Empty, Sand, Sand],
 ];
 
+#[cfg(test)]
 fn rules(slice: [CellType; 4]) -> [CellType; 4] {
-    use CellType::*;
-    match slice {
-        [Sand, Empty, Empty, Empty] => [Empty, Empty, Sand, Empty],
-        [Sand, Sand, Sand, Empty] => [Sand, Empty, Sand, Sand],
-        [Sand, Sand, Empty, Empty] => [Empty, Empty, Sand, Sand],
-        [Empty, Sand, Sand, Empty] => [Empty, Empty, Sand, Sand],
-        [Empty, Sand, Empty, Empty] => [Empty, Empty, Empty, Sand],
-        [Sand, Sand, Empty, Sand] => [Empty, Sand, Sand, Sand],
-        [Sand, Empty, Empty, Sand] => [Empty, Empty, Sand, Sand],
-        [Sand, Empty, Sand, Empty] => [Empty, Empty, Sand, Sand],
-        [Empty, Sand, Empty, Sand] => [Empty, Empty, Sand, Sand],
-        otherwise => otherwise,
+    let mut r = HashMap::new();
+    for i in 0..PATTERNS.len() {
+        r.insert(PATTERNS[i], RULES[i]);
     }
+    r.get(&slice).unwrap_or(&slice).clone()
 }
 
+#[cfg(test)]
 fn grid_idx(i: usize, j: usize, time_step: u32) -> u8 {
     let step_rounded = time_step % 2;
     let gid = match (i % 2, j % 2) {
@@ -186,6 +182,7 @@ fn grid_idx(i: usize, j: usize, time_step: u32) -> u8 {
     }
 }
 
+#[cfg(test)]
 impl Field {
     fn encodde_neighborhood(&self, gid: u8, row: usize, col: usize) -> [CellType; 4] {
         let (r, c) = (row as i32, col as i32);
@@ -230,11 +227,6 @@ impl Field {
         self.get_idx(row_u, col_u)
     }
 
-    fn toggle(&mut self, x: f32, y: f32) {
-        let (row, col) = self.get_rc_from_xy(x, y);
-        self.togglerc(row, col);
-    }
-
     fn togglerc(&mut self, row: usize, col: usize) {
         let idx = self.get_idx(row, col);
 
@@ -273,8 +265,10 @@ impl Field {
     }
 }
 
-use std::fmt;
+#[cfg(test)]
+use std::{fmt, collections::HashMap, hash::Hash};
 
+#[cfg(test)]
 impl fmt::Display for Field {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, " ")?;
