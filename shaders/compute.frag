@@ -8,6 +8,7 @@ uniform sampler2D patterns;
 uniform sampler2D rules;
 
 uniform float num_rules;
+uniform float current_rule;
 
 uniform vec2 position;
 uniform float color;
@@ -160,36 +161,52 @@ vec4 gravityBlackMagic(mat4 nh, int gid) {
   // 1 2
   // 3 4
   // unable to use uniform in loop comparison
-  for (float i = 2.; i < 100.; i += 2.) {
+  int time_step_int = int(mod(time_step, 2.));
+
+  for (float i = 0.; i < 100.; i += 2.) {
     if (i >= 2. * num_rules) {
       break;
     }
     // todo: figure out how to query
-    vec2 off1 = (vec2(0, 0) + vec2(i, 0)) / vec2(2. * num_rules, 0);
-    vec2 off2 = (vec2(1, 0) + vec2(i, 0)) / vec2(2. * num_rules, 0);
-    vec2 off3 = (vec2(0, 1) + vec2(i, 0)) / vec2(2. * num_rules, 0);
-    vec2 off4 = (vec2(1, 1) + vec2(i, 0)) / vec2(2. * num_rules, 0);
+    // https://stackoverflow.com/a/60620232
+    vec2 off1 = (vec2(0.5, 0.5) + vec2(i, 0)) / vec2(32, 2);
+    vec2 off2 = (vec2(1.5, 0.5) + vec2(i, 0)) / vec2(32, 2);
+    vec2 off3 = (vec2(0.5, 1.5) + vec2(i, 0)) / vec2(32, 2);
+    vec2 off4 = (vec2(1.5, 1.5) + vec2(i, 0)) / vec2(32, 2);
+  
+    mat4 pattern;
 
-    mat4 pattern = mat4(
-      texture2D(patterns, off1),
-      texture2D(patterns, off2),
-      texture2D(patterns, off3),
-      texture2D(patterns, off4)
-    );
-
-    return pattern * vectorId(gid);
-
-    if (pattern == nh) {
-      if (gid == 1) {
-        return texture2D(rules, off1);
-      } else if (gid == 2) {
-        return texture2D(rules, off2);
-      } else if (gid == 3) {
-        return texture2D(rules, off3);
-      } else if (gid == 4) {
-        return texture2D(rules, off4);
-      }
+    if (time_step_int != 0) {
+      pattern = mat4(
+        texture2D(patterns, off1),
+        texture2D(patterns, off2),
+        texture2D(patterns, off3),
+        texture2D(patterns, off4)
+      );
+    } else {
+      pattern = mat4(
+        texture2D(rules, off1),
+        texture2D(rules, off2),
+        texture2D(rules, off3),
+        texture2D(rules, off4)
+      );
     }
+
+    if (i / 2. == current_rule) {
+      return pattern * vectorId(gid);
+    }
+
+    // if (pattern == nh) {
+    //   if (gid == 1) {
+    //     return texture2D(rules, off1);
+    //   } else if (gid == 2) {
+    //     return texture2D(rules, off2);
+    //   } else if (gid == 3) {
+    //     return texture2D(rules, off3);
+    //   } else if (gid == 4) {
+    //     return texture2D(rules, off4);
+    //   }
+    // }
   }
 
   // todo: check

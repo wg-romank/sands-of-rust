@@ -4,6 +4,12 @@ use glsmrs::{
 };
 use wasm_bindgen::prelude::*;
 
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
+
 #[wasm_bindgen]
 #[repr(u32)]
 #[derive(Hash, Eq, PartialEq, Clone, Copy, Debug)]
@@ -85,10 +91,14 @@ impl Field {
 use glsmrs::GL;
 use CellType::*;
 
-pub fn patterns_texture(ctx: &Ctx) -> Result<UploadedTexture, String> {
-    let spec = TextureSpec::pixel(ColorFormat(GL::RGBA), [2 * 9, 2]);
+pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 9]) -> Result<UploadedTexture, String> {
+    let useful_size = 2 * 9;
+    let next_po2 = 32;
+    let padding = (0..(next_po2 - useful_size)).flat_map(|_| (0 as u32).to_le_bytes().to_vec()).collect::<Vec<u8>>();
+    log!("padding len {:?}", padding.len() / 4);
+    let spec = TextureSpec::pixel(ColorFormat(GL::RGBA), [next_po2, 2]);
 
-    let mut line1 = PATTERNS
+    let mut line1 = arr 
         .iter()
         .flat_map(|ar| {
             [ar[0], ar[1]]
@@ -97,8 +107,9 @@ pub fn patterns_texture(ctx: &Ctx) -> Result<UploadedTexture, String> {
                 .collect::<Vec<u8>>()
         })
         .collect::<Vec<u8>>();
+    line1.extend(&padding);
 
-    let line2 = &PATTERNS
+    let line2 = arr 
         .iter()
         .flat_map(|ar| {
             [ar[2], ar[3]]
@@ -109,20 +120,9 @@ pub fn patterns_texture(ctx: &Ctx) -> Result<UploadedTexture, String> {
         .collect::<Vec<u8>>();
 
     line1.extend(line2);
+    line1.extend(&padding);
 
     spec.upload_u8(&ctx, &line1)
-}
-
-pub fn rules_texture(ctx: &Ctx) -> Result<UploadedTexture, String> {
-    let spec = TextureSpec::pixel(ColorFormat(GL::RGBA), [2 * 9, 2]);
-    let data = &RULES
-        .iter()
-        .flat_map(|ar| {
-            ar.iter()
-                .flat_map(|e: &CellType| (*e as u32).to_le_bytes().to_vec())
-        })
-        .collect::<Vec<u8>>();
-    spec.upload_u8(&ctx, &data)
 }
 
 pub const PATTERNS: [[CellType; 4]; 9] = [
@@ -265,6 +265,7 @@ impl Field {
     }
 }
 
+use std::iter::FromIterator;
 #[cfg(test)]
 use std::{fmt, collections::HashMap, hash::Hash};
 
