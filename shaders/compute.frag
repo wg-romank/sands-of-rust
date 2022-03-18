@@ -22,10 +22,9 @@ vec4 textureOffset(vec2 uv, vec2 offset) {
 float brush(vec2 uv) {
   vec2 pt = position - uv; // adjusted for center of brush
   float radius_adjusted = radius / field_size.x;
-  float color_norm = color / 255.;
 
   float in_circle = sign(pow(radius_adjusted, 2.) - dot(pt, pt));
-  float force_component = clamp(in_circle, 0., 1.) * color_norm;
+  float force_component = clamp(in_circle, 0., 1.) * color;
 
   return force_component;
 }

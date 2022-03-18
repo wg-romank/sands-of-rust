@@ -4,6 +4,7 @@ uniform sampler2D field;
 
 varying vec2 frag_uv;
 
+// todo: instead let's just use another texture
 const float EMPTY = 10.;
 const float WATER = 20.;
 const float SAND = 30.;

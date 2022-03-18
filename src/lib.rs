@@ -205,7 +205,7 @@ impl Render {
             ("patterns", gl::UniformData::Texture(&mut self.patterns_texture)),
             ("rules", gl::UniformData::Texture(&mut self.rules_texture)),
             ("position", gl::UniformData::Vector2([self.brush.x, self.brush.y])),
-            ("color", gl::UniformData::Scalar(self.brush.color as u32 as f32)),
+            ("color", gl::UniformData::Scalar(self.brush.color.into())),
             ("radius", gl::UniformData::Scalar(self.brush.radius)),
             ("field", gl::UniformData::Texture(self.temp_fb.color_slot())),
             ("field_size", gl::UniformData::Vector2(self.dimensions)),

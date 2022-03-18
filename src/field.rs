@@ -25,6 +25,12 @@ pub struct Field {
     values: Vec<CellType>,
 }
 
+impl Into<f32> for CellType {
+    fn into(self) -> f32 {
+        (self as u32) as f32 / 255.
+    }
+}
+
 #[cfg(test)]
 fn get_xy(w: usize, h: usize, idx: usize) -> (f32, f32) {
     let row = idx / w;
