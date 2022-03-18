@@ -2,8 +2,8 @@ import * as sor from "sands-of-rust";
 
 const canvas = document.getElementById("sands-of-rust-canvas");
 const brect = canvas.getBoundingClientRect();
-const w = 4;
-const h = 4;
+const w = 128;
+const h = 128;
 
 canvas.setAttribute('width', brect.width);
 canvas.setAttribute('height', brect.height);
@@ -19,7 +19,7 @@ const renderLoop = (timestamp) => {
   lastCall = timestamp;
   cum += delta;
 
-  let fps = 1;
+  let fps = 60;
   if (cum > 1000 / fps) {
     r.frame(timeStep);
     cum = 0;
@@ -60,20 +60,11 @@ canvas.addEventListener('pointerup', ev => {
 
 document.addEventListener('keydown', ev => {
   console.log("Key down ", ev);
-  try {
-    let key = Number(ev.key);
-    console.log("Num down ", key);
-    if (key != NaN) {
-      r.set_current_rule(key - 1);
-    }
-  } catch {
-
+  if (ev.key == "1") {
+    r.brush_change_color(sor.CellType.Sand)
+  } else if (ev.key == "2") {
+    r.brush_change_color(sor.CellType.Empty)
   }
-  // if (ev.key == "1") {
-  //   r.brush_change_color(sor.CellType.Sand)
-  // } else if (ev.key == "2") {
-  //   r.brush_change_color(sor.CellType.Empty)
-  // }
 })
 
 requestAnimationFrame(renderLoop);

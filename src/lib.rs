@@ -133,7 +133,6 @@ pub struct Render {
     patterns_texture: UploadedTexture,
     rules_texture: UploadedTexture,
     dimensions: [f32; 2],
-    current_rule: f32,
 }
 
 #[wasm_bindgen]
@@ -185,12 +184,7 @@ impl Render {
             patterns_texture,
             rules_texture,
             dimensions: [w as f32, h as f32],
-            current_rule: 0.,
         })
-    }
-
-    pub fn set_current_rule(&mut self, r: f32) {
-        self.current_rule = r;
     }
 
     pub fn brush_move_to(&mut self, x: f32, y: f32) {
@@ -207,7 +201,6 @@ impl Render {
 
     pub fn frame(&mut self, time_step: f32) -> Result<(), String> {
         let uniforms = vec![
-            ("current_rule", gl::UniformData::Scalar(self.current_rule)),
             ("num_rules", gl::UniformData::Scalar(RULES.len() as f32)),
             ("patterns", gl::UniformData::Texture(&mut self.patterns_texture)),
             ("rules", gl::UniformData::Texture(&mut self.rules_texture)),
