@@ -111,7 +111,7 @@ impl Default for BrushStroke {
         Self {
             x: 0.,
             y: 0.,
-            color: CellType::Empty,
+            color: CellType::Sand,
             radius: 0.,
         }
     }
@@ -130,6 +130,7 @@ pub struct Render {
     temp_fb: ColorFramebuffer,
     patterns_texture: UploadedTexture,
     rules_texture: UploadedTexture,
+    color_texture: UploadedTexture,
     dimensions: [f32; 2],
 }
 
@@ -159,11 +160,13 @@ impl Render {
         let rules_texture = texture(&ctx, RULES)?;
 
         let texture_spec = TextureSpec::pixel(ColorFormat(GL::RGBA), [w, h]);
-        let state_texture = texture_spec.upload(&ctx, InternalFormat(GL::UNSIGNED_BYTE), None)?;
+        let state_texture = texture_spec.upload(&ctx, InternalFormat(GL::FLOAT), None)?;
         let state_fb = EmptyFramebuffer::new(&ctx, vp).with_color_slot(state_texture)?;
 
-        let temp_fb = texture_spec.upload_u8(&ctx, &empty_bytes.bytes())?;
+        let temp_fb = texture_spec.upload_rgba(&ctx, &empty_bytes.bytes())?;
         let temp_fb = EmptyFramebuffer::new(&ctx, vp).with_color_slot(temp_fb)?;
+
+        let color_texture = CellType::color_texture_bytes(&ctx)?;
 
         let pipeline = Pipeline::new(&ctx);
 
@@ -179,6 +182,7 @@ impl Render {
             temp_fb,
             patterns_texture,
             rules_texture,
+            color_texture,
             dimensions: [w as f32, h as f32],
         })
     }
@@ -207,7 +211,7 @@ impl Render {
                 "position",
                 gl::UniformData::Vector2([self.brush.x, self.brush.y]),
             ),
-            ("color", gl::UniformData::Scalar(self.brush.color.into())),
+            ("color", gl::UniformData::Vector4(self.brush.color.pack_rgba())),
             ("radius", gl::UniformData::Scalar(self.brush.radius)),
             ("field", gl::UniformData::Texture(self.temp_fb.color_slot())),
             ("field_size", gl::UniformData::Vector2(self.dimensions)),
@@ -239,8 +243,10 @@ impl Render {
 
         let display_uniforms = vec![(
             "field",
-            gl::UniformData::Texture(self.state_fb.color_slot()),
-        )]
+            gl::UniformData::Texture(self.state_fb.color_slot())),
+            ("color_texture",
+            gl::UniformData::Texture(&mut self.color_texture)),
+        ]
         .into_iter()
         .collect::<HashMap<_, _>>();
 

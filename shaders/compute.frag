@@ -10,7 +10,7 @@ uniform sampler2D rules;
 uniform float num_rules;
 
 uniform vec2 position;
-uniform float color;
+uniform vec4 color;
 uniform float radius;
 
 varying vec2 frag_uv;
@@ -19,20 +19,20 @@ vec4 textureOffset(vec2 uv, vec2 offset) {
   return texture2D(field, (uv * field_size + offset) / field_size);
 }
 
-float brush(vec2 uv) {
+vec4 brush(vec2 uv) {
   vec2 pt = position - uv; // adjusted for center of brush
   float radius_adjusted = radius / field_size.x;
 
   float in_circle = sign(pow(radius_adjusted, 2.) - dot(pt, pt));
-  float force_component = clamp(in_circle, 0., 1.) * color;
+  vec4 force_component = clamp(in_circle, 0., 1.) * color;
 
   return force_component;
 }
 
 vec4 texture(vec2 uv, vec2 offset) {
-  float force_component = brush(uv);
-  if (force_component != 0.0) {
-    return vec4(force_component, 0., 0., 0.);
+  vec4 force_component = brush(uv);
+  if (force_component != vec4(0)) {
+    return force_component;
   } else {
     return textureOffset(uv, offset);
   } 

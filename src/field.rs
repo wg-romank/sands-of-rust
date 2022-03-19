@@ -4,25 +4,44 @@ use glsmrs::{
 };
 use wasm_bindgen::prelude::*;
 
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
+
+
 #[wasm_bindgen]
-#[repr(u32)]
-#[derive(Hash, Eq, PartialEq, Clone, Copy, Debug)]
+#[derive(Hash, Eq, PartialEq, Clone, Copy, Debug, EnumIter)]
 pub enum CellType {
-    Empty = 10,
-    Water = 20,
-    Sand = 30,
-    Wall = 90,
+    Empty,
+    Water,
+    Sand,
+    Wall,
 }
 
 impl CellType {
-    fn pack_u8(&self) -> [u8; 4] {
-        (*self as u32).to_le_bytes()
+    pub fn pack_rgba(&self) -> [f32; 4] {
+        let idx = Self::iter().take_while(|c| c != self).count() as f32;
+        [
+            (idx + 0.5) / Self::iter().len() as f32,
+            0.,
+            0.,
+            0.
+        ]
     }
-}
 
-impl Into<f32> for CellType {
-    fn into(self) -> f32 {
-        (self as u32) as f32 / 255.
+    fn color(self)  -> [f32; 4] {
+        use CellType::*;
+        match self {
+            Empty => [0., 0., 0., 1.],
+            Sand => [168. / 255., 134. / 255., 42. / 255., 1.],
+            Water => [103. / 255., 133. / 255., 193. / 255., 1.],
+            Wall => [128. / 255., 128. / 255., 128. / 255., 1.],
+        }
+    }
+
+    pub fn color_texture_bytes(ctx: &Ctx) -> Result<UploadedTexture, String> {
+        let tex = TextureSpec::pixel(ColorFormat(GL::RGBA), [Self::iter().len() as u32, 1]);
+        let bytes = Self::iter().map(Self::color).collect::<Vec<[f32; 4]>>();
+        tex.upload_rgba(ctx, &bytes)
     }
 }
 
@@ -47,11 +66,11 @@ impl Field {
         }
     }
 
-    pub fn bytes(&self) -> Vec<u8> {
+    pub fn bytes(&self) -> Vec<[f32; 4]> {
         let padding = (0..self.width)
             .map(|_| &CellType::Wall)
-            .flat_map(CellType::pack_u8);
-        let bytes = self.values.iter().flat_map(CellType::pack_u8);
+            .map(CellType::pack_rgba);
+        let bytes = self.values.iter().map(CellType::pack_rgba);
 
         padding.chain(bytes).collect()
     }
@@ -66,8 +85,8 @@ pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 9]) -> Result<UploadedTexture, St
     let next_po2 = 32;
 
     let padding = (0..(next_po2 - useful_size))
-        .flat_map(|_| 0_u32.to_le_bytes())
-        .collect::<Vec<u8>>();
+        .map(|_| [0., 0., 0., 0.])
+        .collect::<Vec<[f32; 4]>>();
     let spec = TextureSpec::pixel(ColorFormat(GL::RGBA), [next_po2, 2]);
 
     let mut line1 = arr
@@ -75,10 +94,10 @@ pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 9]) -> Result<UploadedTexture, St
         .flat_map(|ar| {
             [ar[0], ar[1]]
                 .iter()
-                .flat_map(CellType::pack_u8)
-                .collect::<Vec<u8>>()
+                .map(CellType::pack_rgba)
+                .collect::<Vec<[f32; 4]>>()
         })
-        .collect::<Vec<u8>>();
+        .collect::<Vec<[f32; 4]>>();
     line1.extend(&padding);
 
     let line2 = arr
@@ -86,15 +105,15 @@ pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 9]) -> Result<UploadedTexture, St
         .flat_map(|ar| {
             [ar[2], ar[3]]
                 .iter()
-                .flat_map(CellType::pack_u8)
-                .collect::<Vec<u8>>()
+                .map(CellType::pack_rgba)
+                .collect::<Vec<[f32; 4]>>()
         })
-        .collect::<Vec<u8>>();
+        .collect::<Vec<[f32; 4]>>();
 
     line1.extend(line2);
     line1.extend(&padding);
 
-    spec.upload_u8(ctx, &line1)
+    spec.upload_rgba(ctx, &line1)
 }
 
 pub const PATTERNS: [[CellType; 4]; 9] = [
@@ -371,10 +390,10 @@ fn test_step() {
     )
 }
 
-#[test]
-fn understand_conversion() {
-    use CellType::*;
+// #[test]
+// fn understand_conversion() {
+//     use CellType::*;
 
-    assert_eq!(Water as u32, 20);
-    assert_eq!(Water as u32 as f32, 20.);
-}
+//     assert_eq!(Water as u32, 20);
+//     assert_eq!(Water as u32 as f32, 20.);
+// }
