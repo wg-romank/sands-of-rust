@@ -1,126 +1,136 @@
+use glsmrs::{
+    texture::{ColorFormat, TextureSpec, UploadedTexture},
+    Ctx,
+};
 use wasm_bindgen::prelude::*;
-
-
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
-
 
 #[wasm_bindgen]
 #[repr(u32)]
-#[derive(PartialEq, Clone, Copy, Debug)]
+#[derive(Hash, Eq, PartialEq, Clone, Copy, Debug)]
 pub enum CellType {
     Empty = 10,
     Water = 20,
     Sand = 30,
+    Wall = 90,
 }
 
+impl CellType {
+    fn pack_u8(&self) -> [u8; 4] {
+        (*self as u32).to_le_bytes()
+    }
+}
 
-#[wasm_bindgen]
+impl Into<f32> for CellType {
+    fn into(self) -> f32 {
+        (self as u32) as f32 / 255.
+    }
+}
+
 pub struct Field {
     pub width: usize,
     pub height: usize,
     values: Vec<CellType>,
 }
 
-fn get_xy(w: usize, h: usize, idx: usize) -> (f32, f32) {
-    let row = idx / w;
-    let col = idx % w;
-
-    (row as f32 / h as f32, col as f32 / w as f32)
-}
-
-#[wasm_bindgen]
 impl Field {
-    pub fn new(w: usize, h: usize) -> Field {
+    pub fn new(w: usize, h: usize, fill: impl Fn(usize) -> CellType) -> Field {
         let width = w;
         let height = h;
-        let values = (0..(width * height)).into_iter().map(|idx| {
-            let (x, y) = get_xy(width, height, idx);
-
-            let rad = (x - 0.5).powf(2.) + (y - 0.5).powf(2.);
-            if  rad <= (0.3 as f32).powf(2.0) && rad >= (0.2 as f32).powf(2.0)  { CellType::Sand } else { CellType::Empty }
-        }).collect::<Vec<CellType>>();
-
-        Field { width, height, values }
-    }
-
-    pub fn new_empty(w: usize, h: usize, value: CellType) -> Field {
-        let width = w;
-        let height = h;
-        let values = (0..(width * height))
+        let values = (0..(width * (height - 1)))
             .into_iter()
-            .map(|_idx| value)
+            .map(fill)
             .collect::<Vec<CellType>>();
-        Field { width, height, values }
+        Field {
+            width,
+            height,
+            values,
+        }
     }
-
-}
-
-impl Field {
-    pub fn get_idx(&self, row: usize, col: usize) -> usize {
-        row * self.width + col
-    }
-
-    pub fn get_rc_from_xy(&self, x: f32, y: f32) -> (usize, usize) {
-        let row = (x * self.width as f32) as usize;
-        let col = (y * self.height as f32) as usize;
-
-        (row, col)
-    }
-
-    pub fn xy(&self, idx: usize) -> (f32, f32) {
-        get_xy(self.width, self.height, idx)
-    }
-
-    pub fn dx(&self) -> f32 { 1. / self.height as f32 }
-
-    pub fn dy(&self) -> f32 { 1. / self.width as f32 }
 
     pub fn bytes(&self) -> Vec<u8> {
-        self.values
-            .iter()
-            .flat_map(|e: &CellType| (*e as u32).to_le_bytes().to_vec() )
-            .collect()
+        let padding = (0..self.width)
+            .map(|_| &CellType::Wall)
+            .flat_map(CellType::pack_u8);
+        let bytes = self.values.iter().flat_map(CellType::pack_u8);
+
+        padding.chain(bytes).collect()
     }
 }
 
+use glsmrs::GL;
+use CellType::*;
+
+pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 9]) -> Result<UploadedTexture, String> {
+    let useful_size = 2 * 9;
+    // todo: compute atuomatically
+    let next_po2 = 32;
+
+    let padding = (0..(next_po2 - useful_size))
+        .flat_map(|_| 0_u32.to_le_bytes())
+        .collect::<Vec<u8>>();
+    let spec = TextureSpec::pixel(ColorFormat(GL::RGBA), [next_po2, 2]);
+
+    let mut line1 = arr
+        .iter()
+        .flat_map(|ar| {
+            [ar[0], ar[1]]
+                .iter()
+                .flat_map(CellType::pack_u8)
+                .collect::<Vec<u8>>()
+        })
+        .collect::<Vec<u8>>();
+    line1.extend(&padding);
+
+    let line2 = arr
+        .iter()
+        .flat_map(|ar| {
+            [ar[2], ar[3]]
+                .iter()
+                .flat_map(CellType::pack_u8)
+                .collect::<Vec<u8>>()
+        })
+        .collect::<Vec<u8>>();
+
+    line1.extend(line2);
+    line1.extend(&padding);
+
+    spec.upload_u8(ctx, &line1)
+}
+
+pub const PATTERNS: [[CellType; 4]; 9] = [
+    [Sand, Empty, Empty, Empty],
+    [Sand, Sand, Sand, Empty],
+    [Sand, Sand, Empty, Empty],
+    [Empty, Sand, Sand, Empty],
+    [Empty, Sand, Empty, Empty],
+    [Sand, Sand, Empty, Sand],
+    [Sand, Empty, Empty, Sand],
+    [Sand, Empty, Sand, Empty],
+    [Empty, Sand, Empty, Sand],
+];
+
+pub const RULES: [[CellType; 4]; 9] = [
+    [Empty, Empty, Sand, Empty],
+    [Sand, Empty, Sand, Sand],
+    [Empty, Empty, Sand, Sand],
+    [Empty, Empty, Sand, Sand],
+    [Empty, Empty, Empty, Sand],
+    [Empty, Sand, Sand, Sand],
+    [Empty, Empty, Sand, Sand],
+    [Empty, Empty, Sand, Sand],
+    [Empty, Empty, Sand, Sand],
+];
+
+#[cfg(test)]
 fn rules(slice: [CellType; 4]) -> [CellType; 4] {
-    use CellType::*;
-    match slice {
-        [Sand, Empty,
-         Empty, Empty] => [Empty, Empty,
-                           Sand, Empty],
-        [Sand, Sand,
-         Sand, Empty] => [Sand, Empty,
-                          Sand, Sand],
-        [Sand, Sand,
-         Empty, Empty] => [Empty, Empty,
-                           Sand, Sand],
-        [Empty, Sand,
-         Sand, Empty] => [Empty, Empty,
-                          Sand, Sand],
-        [Empty, Sand,
-         Empty, Empty] => [Empty, Empty,
-                           Empty, Sand],
-        [Sand, Sand,
-         Empty, Sand] => [Empty, Sand,
-                          Sand, Sand],
-        [Sand, Empty,
-         Empty, Sand] => [Empty, Empty,
-                          Sand, Sand],
-        [Sand, Empty,
-         Sand, Empty] => [Empty, Empty,
-                          Sand, Sand],
-        [Empty, Sand,
-         Empty, Sand] => [Empty, Empty,
-                          Sand, Sand],
-        otherwise => otherwise
+    let mut r = HashMap::new();
+    for i in 0..PATTERNS.len() {
+        r.insert(PATTERNS[i], RULES[i]);
     }
+    r.get(&slice).unwrap_or(&slice).clone()
 }
 
+#[cfg(test)]
 fn grid_idx(i: usize, j: usize, time_step: u32) -> u8 {
     let step_rounded = time_step % 2;
     let gid = match (i % 2, j % 2) {
@@ -128,7 +138,7 @@ fn grid_idx(i: usize, j: usize, time_step: u32) -> u8 {
         (0, 1) => 2,
         (1, 0) => 3,
         (1, 1) => 4,
-        (_, _) => panic!("Invalid i={} j={}", i, j)
+        (_, _) => panic!("Invalid i={} j={}", i, j),
     };
 
     if step_rounded == 0 {
@@ -140,11 +150,20 @@ fn grid_idx(i: usize, j: usize, time_step: u32) -> u8 {
             2 => 3,
             3 => 2,
             o => o,
-        }
+        };
     }
 }
 
+#[cfg(test)]
 impl Field {
+    pub fn get_idx(&self, row: usize, col: usize) -> usize {
+        row * self.width + col
+    }
+
+    fn height(&self) -> usize {
+        self.height - 1
+    }
+
     fn encodde_neighborhood(&self, gid: u8, row: usize, col: usize) -> [CellType; 4] {
         let (r, c) = (row as i32, col as i32);
         match gid {
@@ -164,7 +183,13 @@ impl Field {
         }
     }
 
-    fn slice(&self, i1: (i32, i32), i2: (i32, i32), i3: (i32, i32), i4: (i32, i32)) -> [CellType; 4] {
+    fn slice(
+        &self,
+        i1: (i32, i32),
+        i2: (i32, i32),
+        i3: (i32, i32),
+        i4: (i32, i32),
+    ) -> [CellType; 4] {
         [
             self.values[self.get_idx_clamp(i1.0, i1.1)],
             self.values[self.get_idx_clamp(i2.0, i2.1)],
@@ -174,19 +199,13 @@ impl Field {
     }
 
     fn get_idx_clamp(&self, row: i32, col: i32) -> usize {
-        use std::cmp::min;
         use std::cmp::max;
-        let row_u = min(max(0, row), (self.height - 1) as i32) as usize;
+        use std::cmp::min;
+        let row_u = min(max(0, row), (self.height() - 1) as i32) as usize;
         let col_u = min(max(0, col), (self.width - 1) as i32) as usize;
 
         self.get_idx(row_u, col_u)
     }
-
-
-    fn toggle(&mut self, x: f32, y: f32) {
-        let (row, col) = self.get_rc_from_xy(x, y);
-        self.togglerc(row, col);
-    } 
 
     fn togglerc(&mut self, row: usize, col: usize) {
         let idx = self.get_idx(row, col);
@@ -200,7 +219,7 @@ impl Field {
 
     fn step(&mut self, time_step: u32) {
         let w = self.width;
-        let h = self.height;
+        let h = self.height();
         let mut new_values = self.values.clone();
         for idx in 0..(w * h) {
             // skip some updates?
@@ -217,7 +236,7 @@ impl Field {
             let shifted = rules(nh);
 
             if shifted != nh {
-                print!("gid={} ({},{}) {:?} -> {:?}\n", gid, row, col, nh, shifted);
+                println!("gid={} ({},{}) {:?} -> {:?}", gid, row, col, nh, shifted);
             }
 
             new_values[idx] = shifted[(gid - 1) as usize];
@@ -226,19 +245,21 @@ impl Field {
     }
 }
 
-use std::fmt;
+#[cfg(test)]
+use std::{collections::HashMap, fmt, hash::Hash};
 
+#[cfg(test)]
 impl fmt::Display for Field {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, " ")?;
-        for i in 0..self.height {
+        for i in 0..self.height() {
             write!(f, "{}", i)?;
         }
-        writeln!(f, "")?;
+        writeln!(f)?;
 
         for i in 0..self.width {
             write!(f, "{}", i)?;
-            for j in 0..self.height {
+            for j in 0..self.height() {
                 let idx = self.get_idx(i, j);
                 let v = self.values[idx];
 
@@ -248,39 +269,19 @@ impl fmt::Display for Field {
                     write!(f, "x")?;
                 };
             }
-            writeln!(f, "")?;
-        };
+            writeln!(f)?;
+        }
 
         Ok(())
     }
 }
 
-struct FieldSimple {
-    pub width: usize,
-    pub height: usize,
-    values: Vec<u32>,
-}
+#[cfg(test)]
+fn get_xy(w: usize, h: usize, idx: usize) -> (f32, f32) {
+    let row = idx / w;
+    let col = idx % w;
 
-impl FieldSimple {
-    pub fn new(w: usize, h: usize) -> FieldSimple {
-        let width = w;
-        let height = h;
-        let values = (0..(width * height)).into_iter().map(|idx| {
-            let (x, y) = get_xy(width, height, idx);
-
-            let rad = (x - 0.5).powf(2.) + (y - 0.5).powf(2.);
-            if  rad <= (0.3 as f32).powf(2.0) && rad >= (0.2 as f32).powf(2.0)  { 256 * 256 * 256 } else { 0 }
-        }).collect::<Vec<u32>>();
-
-        FieldSimple { width, height, values }
-    }
-
-    pub fn bytes(&self) -> Vec<u8> {
-        self.values
-            .iter()
-            .flat_map(|e: &u32| e.to_be_bytes().to_vec() )
-            .collect()
-    }
+    (row as f32 / h as f32, col as f32 / w as f32)
 }
 
 #[test]
@@ -307,14 +308,25 @@ fn test_rules_invariant() {
 fn test_encode_nh() {
     use CellType::*;
 
-    let field = Field::new(32, 32);
+    let field = Field::new(32, 32, |idx| {
+        let (x, y) = get_xy(32, 32, idx);
+
+        let rad = (x - 0.5).powf(2.) + (y - 0.5).powf(2.);
+        if rad <= (0.3 as f32).powf(2.0) && rad >= (0.2 as f32).powf(2.0) {
+            CellType::Sand
+        } else {
+            CellType::Empty
+        }
+    });
+
     let row = 0;
     let col = 0;
     let gid = grid_idx(row, col, 0);
 
     assert_eq!(
         field.encodde_neighborhood(gid, row, col),
-        [Empty, Empty, Empty, Empty]);
+        [Empty, Empty, Empty, Empty]
+    );
 }
 
 #[test]
@@ -324,7 +336,7 @@ fn test_encode_nh_small_field() {
     let row = 0;
     let col = 0;
 
-    let mut field = Field::new_empty(2, 2, Sand);
+    let mut field = Field::new(2, 3, |_| Sand);
 
     field.togglerc(row, col);
     field.togglerc(row + 1, col + 1);
@@ -340,18 +352,18 @@ fn test_encode_nh_small_field() {
 fn test_step() {
     use CellType::*;
 
-    let mut field = Field::new_empty(4, 4, Empty);
+    let mut field = Field::new(4, 5, |_| Empty);
 
     field.togglerc(1, 1);
     field.togglerc(2, 2);
 
-    print!("field\n{}", field);
+    println!("field{}", field);
 
-    print!("nh (1, 1) {:?}\n", field.encodde_neighborhood(1, 1, 1));
+    println!("nh (1, 1) {:?}", field.encodde_neighborhood(1, 1, 1));
 
     field.step(1);
 
-    print!("field\n{}", field);
+    println!("field{}", field);
 
     assert_eq!(
         field.encodde_neighborhood(1, 1, 1),
@@ -360,17 +372,9 @@ fn test_step() {
 }
 
 #[test]
-fn understand_modulus() {
-    assert_eq!(0 % 2, 0);
-    assert_eq!(1 % 2, 1);
-    assert_eq!(2 % 2, 0);
-    assert_eq!(3 % 2, 1);
-}
-
-#[test]
 fn understand_conversion() {
     use CellType::*;
 
-    assert_eq!(Water as u32, 2);
-    assert_eq!(Water as u32 as f32, 2.);
+    assert_eq!(Water as u32, 20);
+    assert_eq!(Water as u32 as f32, 20.);
 }

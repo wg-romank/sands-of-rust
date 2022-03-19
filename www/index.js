@@ -2,50 +2,28 @@ import * as sor from "sands-of-rust";
 
 const canvas = document.getElementById("sands-of-rust-canvas");
 const brect = canvas.getBoundingClientRect();
-const w = 64;
-const h = 64;
+const w = 128;
+const h = 128;
 
 canvas.setAttribute('width', brect.width);
 canvas.setAttribute('height', brect.height);
 
-const display_shader = sor.display_shader();
-const compute_shader = sor.update_shader();
-const copy_shader = sor.copy_shader();
-const state = sor.initial_state(w, h);
+let r = sor.Render.new("sands-of-rust-canvas", w, h);
 
 let lastCall = 0;
 let cum = 0;
 let timeStep = 0;
-
-let x = 0
-let y = 0;
-let color = sor.CellType.Empty;
-let radius = 0;
 
 const renderLoop = (timestamp) => {
   const delta = timestamp - lastCall;
   lastCall = timestamp;
   cum += delta;
 
-  let fps = 20;
+  let fps = 60;
   if (cum > 1000 / fps) {
-    sor.animation_frame(
-        display_shader,
-        compute_shader,
-        copy_shader,
-        x,
-        y,
-        color,
-        radius,
-        w,
-        h,
-        state,
-        timeStep
-    );
+    r.frame(timeStep);
     cum = 0;
     timeStep += 1;
-
-    radius = 0;
   }
 
   requestAnimationFrame(renderLoop);
@@ -65,26 +43,29 @@ canvas.addEventListener('pointermove', ev => {
     const boundingRect = canvas.getBoundingClientRect();
 
     const canvasLeft = (ev.clientX - boundingRect.left) / boundingRect.width;
-    const canvasTop = (ev.clientY - boundingRect.top) / boundingRect.height;
+    // cursor offsets from top left
+    // but gl coordinates offset from bottom left
+    // can check coordinates in QUAD UVs
+    const canvasTop = 1 - (ev.clientY - boundingRect.top) / boundingRect.height;
 
-    x = canvasLeft;
-    y = canvasTop;
-    radius = 2;
+    r.brush_move_to(canvasLeft, canvasTop);
+    r.brush_change_radius(2);
   }
 });
 
 canvas.addEventListener('pointerup', ev => {
   isDown = false;
+  r.brush_change_radius(0);
 });
 
 document.addEventListener('keydown', ev => {
   console.log("Key down ", ev);
   if (ev.key == "1") {
-    color = sor.CellType.Sand;
+    r.brush_change_color(sor.CellType.Sand)
   } else if (ev.key == "2") {
-    color = sor.CellType.Water;
+    r.brush_change_color(sor.CellType.Empty)
   } else if (ev.key == "3") {
-    color = sor.CellType.Empty;
+    r.brush_change_color(sor.CellType.Wall)
   }
 })
 

@@ -4,6 +4,11 @@ uniform sampler2D field;
 uniform vec2 field_size;
 uniform float time_step;
 
+uniform sampler2D patterns;
+uniform sampler2D rules;
+
+uniform float num_rules;
+
 uniform vec2 position;
 uniform float color;
 uniform float radius;
@@ -11,20 +16,26 @@ uniform float radius;
 varying vec2 frag_uv;
 
 vec4 textureOffset(vec2 uv, vec2 offset) {
-  // todo: handle borders?
-  // handling with clamp currently
-  vec2 pt = position - uv;
+  return texture2D(field, (uv * field_size + offset) / field_size);
+}
+
+float brush(vec2 uv) {
+  vec2 pt = position - uv; // adjusted for center of brush
   float radius_adjusted = radius / field_size.x;
-  float color_norm = color / 255.;
 
-  float img_component = texture2D(field, (uv * field_size + offset) / field_size).x;
-  float force_component = clamp(sign(pow(radius_adjusted, 2.) - dot(pt, pt)), 0., 1.) * color_norm;
+  float in_circle = sign(pow(radius_adjusted, 2.) - dot(pt, pt));
+  float force_component = clamp(in_circle, 0., 1.) * color;
 
+  return force_component;
+}
+
+vec4 texture(vec2 uv, vec2 offset) {
+  float force_component = brush(uv);
   if (force_component != 0.0) {
     return vec4(force_component, 0., 0., 0.);
   } else {
-    return vec4(img_component, 0., 0., 0.);
-  }
+    return textureOffset(uv, offset);
+  } 
 }
 
 int gridIndex(vec2 coord) {
@@ -77,7 +88,7 @@ int timedGridIndex(vec2 coord, float time_step) {
   return -1;
 }
 
-vec4 neighborhood(vec2 uv, int gid) {
+mat4 neighborhood(vec2 uv, int gid) {
   // time goes 0, 1, 0, 1, ...
   // need to apply mask based on own coordinates
   // instead of same pattern over whole picture
@@ -94,27 +105,27 @@ vec4 neighborhood(vec2 uv, int gid) {
     //  3 4
     offsetC1 = vec2( 0, 0);
     offsetC2 = vec2(-1, 0); // right
-    offsetC3 = vec2( 0, 1); // down
-    offsetC4 = vec2(-1, 1); // down right
+    offsetC3 = vec2( 0,-1); // down
+    offsetC4 = vec2(-1,-1); // down right
   } else if (gid == 2) { // right == c2
     //  1 *
     //  3 4
     offsetC1 = vec2( 1, 0); // left
     offsetC2 = vec2( 0, 0);
-    offsetC3 = vec2( 1, 1); // down left
-    offsetC4 = vec2( 0, 1); // down
+    offsetC3 = vec2( 1,-1); // down left
+    offsetC4 = vec2( 0,-1); // down
   } else if (gid == 3) { // down == c3
     //  1 2
     //  * 3
-    offsetC1 = vec2( 0,-1); // up
-    offsetC2 = vec2(-1,-1); // up right
+    offsetC1 = vec2( 0, 1); // up
+    offsetC2 = vec2(-1, 1); // up right
     offsetC3 = vec2( 0, 0);
     offsetC4 = vec2(-1, 0); // right
   } else if (gid == 4) { // down right == c4
     // 1 2
     // 3 *
-    offsetC1 = vec2( 1,-1); // up left
-    offsetC2 = vec2( 0,-1); // up 
+    offsetC1 = vec2( 1, 1); // up left
+    offsetC2 = vec2( 0, 1); // up
     offsetC3 = vec2( 1, 0); // left
     offsetC4 = vec2( 0, 0);
   }
@@ -122,109 +133,12 @@ vec4 neighborhood(vec2 uv, int gid) {
   // c1 c2
   // c3 c4
  
-  vec4 c1 = textureOffset(uv, offsetC1);
-  vec4 c2 = textureOffset(uv, offsetC2);
-  vec4 c3 = textureOffset(uv, offsetC3);
-  vec4 c4 = textureOffset(uv, offsetC4);
+  vec4 c1 = texture(uv, offsetC1);
+  vec4 c2 = texture(uv, offsetC2);
+  vec4 c3 = texture(uv, offsetC3);
+  vec4 c4 = texture(uv, offsetC4);
 
-  return vec4(c1.x, c2.x, c3.x, c4.x);
-}
-
-vec4 codeNh(vec4 nh, int current) {
-  return nh / 10.;
-}
-
-vec4 gravityBlackMagic(vec4 nh, int current) {
-  // 1 2
-  // 3 4
-  
-  // x y
-  // z w
-
-  // L liquid -> 2
-  // * particle -> 1
-  // ~ empty -> 0
-
-  // particles (~) heavier than liquid (L)
-  // empty space lighter than particles (*) and liquid (L)
-
-  // for each iteration we assign heavy particle (*)
-  // oil is ligher than water, it floats atop
-  // oil is (L) while water is (*) and everyhing that is heavier than water is (*)
-
-  // todo: walls?
-
-  if (codeNh(nh, current) == vec4(2, 2, 2, 1)) {
-    // L L  L L
-    // L ~  ~ L
-    return nh.xywz;
-  } else if (codeNh(nh, current) == vec4(2, 2, 1, 2)) {
-    // L L  L L
-    // ~ L  L ~
-    return nh.xywz;
-  } else if (codeNh(nh, current) == vec4(2, 1, 3, 1)) {
-    // L ~  ~ ~
-    // * ~  * L
-    return nh.wyzx;
-  } else if (codeNh(nh, current) == vec4(1, 2, 1, 3)) {
-    // ~ L  ~ ~
-    // ~ *  L *
-    return nh.xzyw;
-  } else if (codeNh(nh, current) == vec4(2, 1, 3, 3)) {
-    // L ~  ~ L
-    // * *  * *
-    return nh.yxzw;
-  } else if (codeNh(nh, current) == vec4(1, 2, 3, 3)) {
-    // ~ L  L ~
-    // * *  * *
-    return nh.yxzw;
-  } else if (codeNh(nh, current) == vec4(1, 1, 2, 1)) {
-    // ~ ~  ~ ~
-    // L ~  ~ L
-    return nh.xywz;
-  } else if (codeNh(nh, current) == vec4(1, 1, 1, 2)) {
-    // ~ ~  ~ ~
-    // ~ L  L ~
-    return nh.xywz;
-  } else if (codeNh(nh, current).yzw == vec3(1, 1, 1)) {
-    // * ~  ~ ~
-    // ~ ~  * ~
-    return nh.zyxw;
-  } else if (codeNh(nh, current).xzw == vec3(1, 1, 1)) {
-    // ~ *  ~ ~
-    // ~ ~  ~ *
-    return nh.xwzy;
-  } else if (codeNh(nh, current).xz == vec2(1, 1)) {
-    // ~ *  ~ ~
-    // ~ *  * *
-    return nh.xzyw;
-  } else if (codeNh(nh, current).zw == vec2(1, 1)) {
-    // * *  ~ ~
-    // ~ ~  * *
-    return nh.zwxy;
-  } else if (codeNh(nh, current).xw == vec2(1, 1)) {
-    // ~ *  ~ ~
-    // * ~  * *
-    return nh.xwzy;
-  } else if (codeNh(nh, current).yz == vec2(1, 1)) {
-    // * ~  ~ ~
-    // ~ *  * *
-    return nh.zyxw;
-  } else if (codeNh(nh, current).yw == vec2(1, 1)) {
-    // * ~  ~ ~
-    // * ~  * *
-    return nh.wyzx;
-  } else if (codeNh(nh, current).z == 1.) {
-    // * *  ~ *
-    // ~ *  * *
-    return nh.zyxw;
-  } else if (codeNh(nh, current).w == 1.) {
-    // * *  * ~
-    // * ~  * *
-    return nh.xwzy;
-  } else {
-    return nh;
-  }
+  return mat4(c1, c2, c3, c4);
 }
 
 vec4 vectorId(int gid) {
@@ -239,21 +153,53 @@ vec4 vectorId(int gid) {
   }
 }
 
-vec4 decodeNeighborhood(int gid, vec4 nh) {
-  float s = dot(vectorId(gid), nh);
+vec4 gravityBlackMagic(mat4 nh, int gid) {
+  // 1 2
+  // 3 4
+  // unable to use uniform in loop comparison
 
-  return vec4(s, 0, 0, 0);
+  for (float i = 0.; i < 100.; i += 2.) {
+    if (i >= 2. * num_rules) {
+      break;
+    }
+    // https://stackoverflow.com/a/60620232
+    vec2 off1 = (vec2(0.5, 0.5) + vec2(i, 0)) / vec2(32, 2);
+    vec2 off2 = (vec2(1.5, 0.5) + vec2(i, 0)) / vec2(32, 2);
+    vec2 off3 = (vec2(0.5, 1.5) + vec2(i, 0)) / vec2(32, 2);
+    vec2 off4 = (vec2(1.5, 1.5) + vec2(i, 0)) / vec2(32, 2);
+  
+    mat4 pattern = mat4(
+      texture2D(patterns, off1),
+      texture2D(patterns, off2),
+      texture2D(patterns, off3),
+      texture2D(patterns, off4)
+    );
+
+    if (pattern == nh) {
+      if (gid == 1) {
+        return texture2D(rules, off1);
+      } else if (gid == 2) {
+        return texture2D(rules, off2);
+      } else if (gid == 3) {
+        return texture2D(rules, off3);
+      } else if (gid == 4) {
+        return texture2D(rules, off4);
+      }
+    }
+  }
+
+  // todo: check
+  return nh * vectorId(gid);
 }
 
 void main() {
   int gid = timedGridIndex(frag_uv, time_step);
 
-  vec4 mask = neighborhood(frag_uv, gid);
+  mat4 nh = neighborhood(frag_uv, gid);
 
   // values passed in texture are scaled from 0 to 1
   // for (int i = 0; i < 10; i = i + 1) {
-  vec4 shiftedMask = gravityBlackMagic(mask * 255., 0) / 255.;
+  // gl_FragColor = nh * vectorId(gid);
+  gl_FragColor = gravityBlackMagic(nh, gid);
   // }
-
-  gl_FragColor = decodeNeighborhood(gid, shiftedMask);
 } 

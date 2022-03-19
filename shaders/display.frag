@@ -4,9 +4,11 @@ uniform sampler2D field;
 
 varying vec2 frag_uv;
 
+// todo: instead let's just use another texture
 const float EMPTY = 10.;
 const float WATER = 20.;
 const float SAND = 30.;
+const float WALL = 90.;
 
 const vec4 error = vec4(1., 0., 0., 1.);
 
@@ -14,18 +16,26 @@ float encodeCell(vec4 contents) {
     return contents.x * 255.;
 }
 
-vec4 cellColor(float cellType) {
-    if (cellType == EMPTY) {
+// TODO: cannot use exact match here on mobile :(
+vec4 cellColor(vec4 pixel) {
+    float cellType = encodeCell(pixel);
+    if (abs(cellType - EMPTY) < 1.) {
         return vec4(0.0, 0.0, 0.0, 1.0);
-    } else if (cellType == SAND) {
+    } else if (abs(cellType - SAND) < 1.) {
         return vec4(vec3(168, 134, 42) / 255.0, 1.0);
-    } else if (cellType == WATER) {
+    } else if (abs(cellType - WATER) < 1.) {
         return vec4(vec3(103, 133, 193) / 255.0, 1.0);
+    } else if (abs(cellType - WALL) < 1.) {
+        return vec4(vec3(128, 128, 128) / 255.0, 1.0);
     } else {
         return error;
     }
 }
 
 void main() {
-    gl_FragColor = cellColor(encodeCell(texture2D(field, vec2(frag_uv.x, 1.0 - frag_uv.y))));
+    vec2 uv = vec2(frag_uv.x, frag_uv.y);
+    vec4 pixel = texture2D(field, uv);
+    vec4 cell_color = cellColor(pixel);
+
+    gl_FragColor = cell_color;
 }

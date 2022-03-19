@@ -1,4 +1,4 @@
-wasm:
+wasm: test
 	wasm-pack build
 
 build: wasm

@@ -1,167 +1,256 @@
+use field::CellType;
+use gl::attributes::AttributeVector2;
+use gl::mesh::Mesh;
+use gl::texture::ColorFormat;
+use gl::texture::ColorFramebuffer;
+use gl::texture::EmptyFramebuffer;
+use gl::texture::Framebuffer;
+use gl::texture::InternalFormat;
+use gl::texture::TextureSpec;
+use gl::texture::UploadedTexture;
+use gl::texture::Viewport;
+use gl::Ctx;
+use gl::Pipeline;
+use gl::Program;
+use gl::GL;
 use wasm_bindgen::prelude::*;
 
-use wasm_bindgen::JsCast;
-use web_sys;
 use std::collections::HashMap;
 
 use glsmrs as gl;
 
+use crate::field::texture;
+use crate::field::PATTERNS;
+use crate::field::RULES;
+
 mod field;
 
-pub fn get_canvas() -> Option<web_sys::HtmlCanvasElement> {
-    let document = web_sys::window()?.document()?;
-    let canvas = document.get_element_by_id("sands-of-rust-canvas")?;
-
-    canvas.dyn_into::<web_sys::HtmlCanvasElement>().ok()
-}
-
-fn get_ctx<T : JsCast>(ctx_name: &str) -> Result<T, JsValue> {
-    let ctx = get_canvas()
-        .ok_or(JsValue::from_str("Failed to get canvas"))?
-        .get_context(ctx_name)?
-        .ok_or(JsValue::from_str("Failed getting ctx"))?;
-
-    ctx.dyn_into::<T>()
-        .map_err(|e| JsValue::from(e))
-}
-
-pub fn make_quad() -> ([f32; 8], [f32; 8], [u16; 6]) {
-    let vertices: [f32; 8] = [
-        -1.0, -1.0,
-        1.0, -1.0,
-        1.0, 1.0,
-        -1.0, 1.0
-    ];
-    let uvs: [f32; 8] = [
-        0.0, 0.0,
-        1.0, 0.0,
-        1.0, 1.0,
-        0.0, 1.0
-    ];
+pub fn make_quad() -> ([[f32; 2]; 4], [[f32; 2]; 4], [u16; 6]) {
+    let vertices: [[f32; 2]; 4] = [[-1.0, -1.0], [1.0, -1.0], [1.0, 1.0], [-1.0, 1.0]];
+    let uvs: [[f32; 2]; 4] = [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]];
     let indices: [u16; 6] = [0, 1, 2, 2, 3, 0];
 
     (vertices, uvs, indices)
 }
 
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
 
-#[wasm_bindgen]
-pub fn display_shader() -> Result<gl::Program, JsValue> {
-    let ctx = get_ctx("webgl")?;
-
+pub fn display_shader(ctx: &Ctx) -> Result<gl::Program, JsValue> {
     gl::Program::new(
-        &ctx,
+        ctx,
         include_str!("../shaders/dummy.vert"),
         include_str!("../shaders/display.frag"),
-        vec![
-            gl::UniformDescription::new("field", gl::UniformType::Sampler2D),
-        ],
-        vec![
-            gl::AttributeDescription::new("vert_position", gl::AttributeType::Vector2),
-            gl::AttributeDescription::new("vert_uv", gl::AttributeType::Vector2),
-        ],
-    ).map_err(|e| JsValue::from(e)) 
+    )
+    .map_err(JsValue::from)
 }
 
-#[wasm_bindgen]
-pub fn copy_shader() -> Result<gl::Program, JsValue> {
-    let ctx = get_ctx("webgl")?;
-
+pub fn copy_shader(ctx: &Ctx) -> Result<gl::Program, JsValue> {
     gl::Program::new(
-        &ctx,
+        ctx,
         include_str!("../shaders/dummy.vert"),
         include_str!("../shaders/copy.frag"),
-        vec![
-            gl::UniformDescription::new("field", gl::UniformType::Sampler2D),
-        ],
-        vec![
-            gl::AttributeDescription::new("vert_position", gl::AttributeType::Vector2),
-            gl::AttributeDescription::new("vert_uv", gl::AttributeType::Vector2),
-        ],
-    ).map_err(|e| JsValue::from(e))
+    )
+    .map_err(JsValue::from)
 }
 
-#[wasm_bindgen]
-pub fn update_shader() -> Result<gl::Program, JsValue> {
-    let ctx = get_ctx("webgl")?;
-
+pub fn update_shader(ctx: &Ctx) -> Result<gl::Program, JsValue> {
     gl::Program::new(
-        &ctx,
+        ctx,
         include_str!("../shaders/dummy.vert"),
         include_str!("../shaders/compute.frag"),
-        vec![
-            gl::UniformDescription::new("field", gl::UniformType::Sampler2D),
-            gl::UniformDescription::new("field_size", gl::UniformType::Vector2),
-            gl::UniformDescription::new("time_step", gl::UniformType::Float),
-            gl::UniformDescription::new("color", gl::UniformType::Float),
-            gl::UniformDescription::new("radius", gl::UniformType::Float),
-            gl::UniformDescription::new("position", gl::UniformType::Vector2),
-        ],
-        vec![
-            gl::AttributeDescription::new("vert_position", gl::AttributeType::Vector2),
-            gl::AttributeDescription::new("vert_uv", gl::AttributeType::Vector2),
-        ],
-    ).map_err(|e| JsValue::from(e))
+    )
+    .map_err(JsValue::from)
 }
 
-#[wasm_bindgen]
-pub fn initial_state(
-    w: u32,
-    h: u32,
-) -> Result<gl::GlState, JsValue> {
-    let canvas = get_canvas().ok_or(JsValue::from_str("Failed to get canvas"))?;
-
-    let context = get_ctx("webgl")?;
-
+pub fn initial_state(ctx: &Ctx) -> Result<Mesh, String> {
     let (vertices, uvs, indices) = make_quad();
 
-    let mut state = gl::GlState::new(&context, gl::Viewport {w: canvas.width(), h: canvas.height()});
-
-    let packf32 = |v: &[f32]| { v.iter().flat_map(|el| el.to_le_bytes().to_vec()).collect::<Vec<u8>>() };
-    let packu16 = |v: &[u16]| { v.iter().flat_map(|el| el.to_le_bytes().to_vec()).collect::<Vec<u8>>() };
-
-    let empty_bytes = field::Field::new_empty(w as usize, h as usize, field::CellType::Empty);
-
-    state
-        .vertex_buffer("vert_position", packf32(&vertices).as_slice())?
-        .vertex_buffer("vert_uv", packf32(&uvs).as_slice())?
-        .element_buffer(packu16(&indices).as_slice())?
-        .texture("state", Some(&empty_bytes.bytes().as_slice()), w, h)?
-        .texture("display", Some(&empty_bytes.bytes().as_slice()), w, h)?;
-
-    Ok(state)
+    Mesh::new(ctx, &indices)?
+        .with_attribute::<AttributeVector2>("vert_position", &vertices)?
+        .with_attribute::<AttributeVector2>("vert_uv", &uvs)
 }
 
 #[wasm_bindgen]
-pub fn animation_frame(
-    display_shader: &gl::Program,
-    update_shader: &gl::Program,
-    copy_shader: &gl::Program,
+pub struct BrushStroke {
     x: f32,
     y: f32,
-    color: field::CellType,
-    raidus: f32,
-    w: f32,
-    h: f32,
-    state: &mut gl::GlState,
-    time_step: f32,
-) -> Result<(), JsValue> {
-    let uniforms = vec![
-        ("field", gl::UniformData::Texture("display")),
-        ("position", gl::UniformData::Vector2([x, y])),
-        ("color", gl::UniformData::Scalar(color as u32 as f32)),
-        ("radius", gl::UniformData::Scalar(raidus)),
-        ("field_size", gl::UniformData::Vector2([w, h])),
-        ("time_step", gl::UniformData::Scalar(time_step)),
-    ].into_iter().collect::<HashMap<_, _>>();
+    color: CellType,
+    radius: f32,
+}
 
-    let copy_uniforms = vec![
-        ("field", gl::UniformData::Texture("state")),
-    ].into_iter().collect::<HashMap<_, _>>();
+impl BrushStroke {
+    pub fn new(x: f32, y: f32, color: CellType, radius: f32) -> Self {
+        Self {
+            x,
+            y,
+            color,
+            radius,
+        }
+    }
 
-    state
-        .run_mut(update_shader, &uniforms, "state")?
-        .run_mut(copy_shader, &copy_uniforms, "display")?
-        .run(display_shader, &copy_uniforms)?;
+    pub fn move_to(&mut self, x: f32, y: f32) {
+        self.x = x;
+        self.y = y;
+    }
 
-    Ok(())
+    pub fn change_color(&mut self, color: CellType) {
+        self.color = color;
+    }
+
+    pub fn change_radius(&mut self, radius: f32) {
+        self.radius = radius
+    }
+}
+
+impl Default for BrushStroke {
+    fn default() -> Self {
+        Self {
+            x: 0.,
+            y: 0.,
+            color: CellType::Empty,
+            radius: 0.,
+        }
+    }
+}
+
+#[wasm_bindgen]
+pub struct Render {
+    pipeline: Pipeline,
+    mesh: Mesh,
+    brush: BrushStroke,
+    display_shader: Program,
+    update_shader: Program,
+    copy_shader: Program,
+    display_fb: EmptyFramebuffer,
+    state_fb: ColorFramebuffer,
+    temp_fb: ColorFramebuffer,
+    patterns_texture: UploadedTexture,
+    rules_texture: UploadedTexture,
+    dimensions: [f32; 2],
+}
+
+#[wasm_bindgen]
+impl Render {
+    pub fn new(canvas_name: &str, w: u32, h: u32) -> Result<Render, JsValue> {
+        console_error_panic_hook::set_once();
+
+        let canvas = gl::util::get_canvas(canvas_name)
+            .ok_or(format!("unable to find canvas {}", canvas_name))?;
+        let ctx = Ctx::new(gl::util::get_ctx_from_canvas(&canvas, "webgl")?)?;
+
+        let empty_bytes = field::Field::new(w as usize, h as usize, |_| CellType::Empty);
+
+        let mesh = initial_state(&ctx)?;
+
+        let display_shader = display_shader(&ctx)?;
+        let copy_shader = copy_shader(&ctx)?;
+        let update_shader = update_shader(&ctx)?;
+
+        let display_fb =
+            EmptyFramebuffer::new(&ctx, Viewport::new(canvas.width(), canvas.height()));
+
+        let vp = Viewport::new(w, h);
+
+        let patterns_texture = texture(&ctx, PATTERNS)?;
+        let rules_texture = texture(&ctx, RULES)?;
+
+        let texture_spec = TextureSpec::pixel(ColorFormat(GL::RGBA), [w, h]);
+        let state_texture = texture_spec.upload(&ctx, InternalFormat(GL::UNSIGNED_BYTE), None)?;
+        let state_fb = EmptyFramebuffer::new(&ctx, vp).with_color_slot(state_texture)?;
+
+        let temp_fb = texture_spec.upload_u8(&ctx, &empty_bytes.bytes())?;
+        let temp_fb = EmptyFramebuffer::new(&ctx, vp).with_color_slot(temp_fb)?;
+
+        let pipeline = Pipeline::new(&ctx);
+
+        Ok(Self {
+            pipeline,
+            mesh,
+            brush: BrushStroke::default(),
+            display_shader,
+            copy_shader,
+            update_shader,
+            display_fb,
+            state_fb,
+            temp_fb,
+            patterns_texture,
+            rules_texture,
+            dimensions: [w as f32, h as f32],
+        })
+    }
+
+    pub fn brush_move_to(&mut self, x: f32, y: f32) {
+        self.brush.move_to(x, y)
+    }
+
+    pub fn brush_change_radius(&mut self, radius: f32) {
+        self.brush.change_radius(radius)
+    }
+
+    pub fn brush_change_color(&mut self, color: CellType) {
+        self.brush.change_color(color);
+    }
+
+    pub fn frame(&mut self, time_step: f32) -> Result<(), String> {
+        let uniforms = vec![
+            ("num_rules", gl::UniformData::Scalar(RULES.len() as f32)),
+            (
+                "patterns",
+                gl::UniformData::Texture(&mut self.patterns_texture),
+            ),
+            ("rules", gl::UniformData::Texture(&mut self.rules_texture)),
+            (
+                "position",
+                gl::UniformData::Vector2([self.brush.x, self.brush.y]),
+            ),
+            ("color", gl::UniformData::Scalar(self.brush.color.into())),
+            ("radius", gl::UniformData::Scalar(self.brush.radius)),
+            ("field", gl::UniformData::Texture(self.temp_fb.color_slot())),
+            ("field_size", gl::UniformData::Vector2(self.dimensions)),
+            ("time_step", gl::UniformData::Scalar(time_step)),
+        ]
+        .into_iter()
+        .collect::<HashMap<_, _>>();
+
+        self.pipeline.shade(
+            &self.update_shader,
+            uniforms,
+            vec![&mut self.mesh],
+            &mut self.state_fb,
+        )?;
+
+        let copy_uniforms = vec![(
+            "field",
+            gl::UniformData::Texture(self.state_fb.color_slot()),
+        )]
+        .into_iter()
+        .collect::<HashMap<_, _>>();
+
+        self.pipeline.shade(
+            &self.copy_shader,
+            copy_uniforms,
+            vec![&mut self.mesh],
+            &mut self.temp_fb,
+        )?;
+
+        let display_uniforms = vec![(
+            "field",
+            gl::UniformData::Texture(self.state_fb.color_slot()),
+        )]
+        .into_iter()
+        .collect::<HashMap<_, _>>();
+
+        self.pipeline.shade(
+            &self.display_shader,
+            display_uniforms,
+            vec![&mut self.mesh],
+            &mut self.display_fb,
+        )?;
+
+        Ok(())
+    }
 }
