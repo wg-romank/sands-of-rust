@@ -8,6 +8,7 @@ varying vec2 frag_uv;
 const float EMPTY = 10.;
 const float WATER = 20.;
 const float SAND = 30.;
+const float WALL = 90.;
 
 const vec4 error = vec4(1., 0., 0., 1.);
 
@@ -24,6 +25,8 @@ vec4 cellColor(vec4 pixel) {
         return vec4(vec3(168, 134, 42) / 255.0, 1.0);
     } else if (abs(cellType - WATER) < 1.) {
         return vec4(vec3(103, 133, 193) / 255.0, 1.0);
+    } else if (abs(cellType - WALL) < 1.) {
+        return vec4(vec3(128, 128, 128) / 255.0, 1.0);
     } else {
         return error;
     }

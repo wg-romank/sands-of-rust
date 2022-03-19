@@ -17,6 +17,7 @@ pub enum CellType {
     Empty = 10,
     Water = 20,
     Sand = 30,
+    Wall = 90,
 }
 
 pub struct Field {
@@ -44,7 +45,7 @@ impl Field {
     pub fn new(w: usize, h: usize) -> Field {
         let width = w;
         let height = h;
-        let values = (0..(width * height))
+        let values = (0..(width * (height - 1)))
             .into_iter()
             .map(|idx| {
                 let (x, y) = get_xy(width, height, idx);
@@ -68,7 +69,7 @@ impl Field {
     pub fn new_empty(w: usize, h: usize, value: CellType) -> Field {
         let width = w;
         let height = h;
-        let values = (0..(width * height))
+        let values = (0..(width * (height - 1)))
             .into_iter()
             .map(|_idx| value)
             .collect::<Vec<CellType>>();
@@ -80,10 +81,11 @@ impl Field {
     }
 
     pub fn bytes(&self) -> Vec<u8> {
-        self.values
-            .iter()
-            .flat_map(|e: &CellType| (*e as u32).to_le_bytes().to_vec())
-            .collect()
+        (0..self.width).flat_map(|_| (CellType::Wall as u32).to_le_bytes().to_vec()).chain(
+            self.values
+                .iter()
+                .flat_map(|e: &CellType| (*e as u32).to_le_bytes().to_vec())
+        ).collect()
     }
 }
 
@@ -190,6 +192,9 @@ fn grid_idx(i: usize, j: usize, time_step: u32) -> u8 {
 
 #[cfg(test)]
 impl Field {
+    fn height(&self) -> usize {
+        self.height - 1
+    }
     fn encodde_neighborhood(&self, gid: u8, row: usize, col: usize) -> [CellType; 4] {
         let (r, c) = (row as i32, col as i32);
         match gid {
@@ -227,7 +232,7 @@ impl Field {
     fn get_idx_clamp(&self, row: i32, col: i32) -> usize {
         use std::cmp::max;
         use std::cmp::min;
-        let row_u = min(max(0, row), (self.height - 1) as i32) as usize;
+        let row_u = min(max(0, row), (self.height() - 1) as i32) as usize;
         let col_u = min(max(0, col), (self.width - 1) as i32) as usize;
 
         self.get_idx(row_u, col_u)
@@ -245,7 +250,7 @@ impl Field {
 
     fn step(&mut self, time_step: u32) {
         let w = self.width;
-        let h = self.height;
+        let h = self.height();
         let mut new_values = self.values.clone();
         for idx in 0..(w * h) {
             // skip some updates?
@@ -271,7 +276,6 @@ impl Field {
     }
 }
 
-use std::iter::FromIterator;
 #[cfg(test)]
 use std::{fmt, collections::HashMap, hash::Hash};
 
@@ -279,14 +283,14 @@ use std::{fmt, collections::HashMap, hash::Hash};
 impl fmt::Display for Field {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, " ")?;
-        for i in 0..self.height {
+        for i in 0..self.height() {
             write!(f, "{}", i)?;
         }
         writeln!(f, "")?;
 
         for i in 0..self.width {
             write!(f, "{}", i)?;
-            for j in 0..self.height {
+            for j in 0..self.height() {
                 let idx = self.get_idx(i, j);
                 let v = self.values[idx];
 
@@ -345,7 +349,7 @@ fn test_encode_nh_small_field() {
     let row = 0;
     let col = 0;
 
-    let mut field = Field::new_empty(2, 2, Sand);
+    let mut field = Field::new_empty(2, 3, Sand);
 
     field.togglerc(row, col);
     field.togglerc(row + 1, col + 1);
@@ -361,7 +365,7 @@ fn test_encode_nh_small_field() {
 fn test_step() {
     use CellType::*;
 
-    let mut field = Field::new_empty(4, 4, Empty);
+    let mut field = Field::new_empty(4, 5, Empty);
 
     field.togglerc(1, 1);
     field.togglerc(2, 2);
