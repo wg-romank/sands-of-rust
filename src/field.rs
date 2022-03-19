@@ -14,16 +14,22 @@ pub enum CellType {
     Wall = 90,
 }
 
-pub struct Field {
-    pub width: usize,
-    pub height: usize,
-    values: Vec<CellType>,
+impl CellType {
+    fn pack_u8(&self) -> [u8; 4] {
+        (*self as u32).to_le_bytes()
+    }
 }
 
 impl Into<f32> for CellType {
     fn into(self) -> f32 {
         (self as u32) as f32 / 255.
     }
+}
+
+pub struct Field {
+    pub width: usize,
+    pub height: usize,
+    values: Vec<CellType>,
 }
 
 impl Field {
@@ -42,11 +48,10 @@ impl Field {
     }
 
     pub fn bytes(&self) -> Vec<u8> {
-        let padding = (0..self.width).flat_map(|_| (CellType::Wall as u32).to_le_bytes());
-        let bytes = self
-            .values
-            .iter()
-            .flat_map(|e: &CellType| (*e as u32).to_le_bytes());
+        let padding = (0..self.width)
+            .map(|_| &CellType::Wall)
+            .flat_map(CellType::pack_u8);
+        let bytes = self.values.iter().flat_map(CellType::pack_u8);
 
         padding.chain(bytes).collect()
     }
@@ -70,7 +75,7 @@ pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 9]) -> Result<UploadedTexture, St
         .flat_map(|ar| {
             [ar[0], ar[1]]
                 .iter()
-                .flat_map(|e| (*e as u32).to_le_bytes())
+                .flat_map(CellType::pack_u8)
                 .collect::<Vec<u8>>()
         })
         .collect::<Vec<u8>>();
@@ -81,7 +86,7 @@ pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 9]) -> Result<UploadedTexture, St
         .flat_map(|ar| {
             [ar[2], ar[3]]
                 .iter()
-                .flat_map(|e| (*e as u32).to_le_bytes())
+                .flat_map(CellType::pack_u8)
                 .collect::<Vec<u8>>()
         })
         .collect::<Vec<u8>>();
