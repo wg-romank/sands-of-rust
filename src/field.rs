@@ -4,12 +4,6 @@ use glsmrs::{
 };
 use wasm_bindgen::prelude::*;
 
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
-
 #[wasm_bindgen]
 #[repr(u32)]
 #[derive(Hash, Eq, PartialEq, Clone, Copy, Debug)]
@@ -32,46 +26,13 @@ impl Into<f32> for CellType {
     }
 }
 
-#[cfg(test)]
-fn get_xy(w: usize, h: usize, idx: usize) -> (f32, f32) {
-    let row = idx / w;
-    let col = idx % w;
-
-    (row as f32 / h as f32, col as f32 / w as f32)
-}
-
 impl Field {
-    #[cfg(test)]
-    pub fn new(w: usize, h: usize) -> Field {
+    pub fn new(w: usize, h: usize, fill: impl Fn(usize) -> CellType) -> Field {
         let width = w;
         let height = h;
         let values = (0..(width * (height - 1)))
             .into_iter()
-            .map(|idx| {
-                let (x, y) = get_xy(width, height, idx);
-
-                let rad = (x - 0.5).powf(2.) + (y - 0.5).powf(2.);
-                if rad <= (0.3 as f32).powf(2.0) && rad >= (0.2 as f32).powf(2.0) {
-                    CellType::Sand
-                } else {
-                    CellType::Empty
-                }
-            })
-            .collect::<Vec<CellType>>();
-
-        Field {
-            width,
-            height,
-            values,
-        }
-    }
-
-    pub fn new_empty(w: usize, h: usize, value: CellType) -> Field {
-        let width = w;
-        let height = h;
-        let values = (0..(width * (height - 1)))
-            .into_iter()
-            .map(|_idx| value)
+            .map(fill)
             .collect::<Vec<CellType>>();
         Field {
             width,
@@ -81,18 +42,13 @@ impl Field {
     }
 
     pub fn bytes(&self) -> Vec<u8> {
-        (0..self.width).flat_map(|_| (CellType::Wall as u32).to_le_bytes().to_vec()).chain(
-            self.values
-                .iter()
-                .flat_map(|e: &CellType| (*e as u32).to_le_bytes().to_vec())
-        ).collect()
-    }
-}
+        let padding = (0..self.width).flat_map(|_| (CellType::Wall as u32).to_le_bytes().to_vec());
+        let bytes = self
+            .values
+            .iter()
+            .flat_map(|e: &CellType| (*e as u32).to_le_bytes().to_vec());
 
-#[cfg(test)]
-impl Field {
-    pub fn get_idx(&self, row: usize, col: usize) -> usize {
-        row * self.width + col
+        padding.chain(bytes).collect()
     }
 }
 
@@ -100,13 +56,16 @@ use glsmrs::GL;
 use CellType::*;
 
 pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 9]) -> Result<UploadedTexture, String> {
-    let useful_size = 2 * 9;
+    let useful_size = arr.len() as u32;
+    // todo: compute atuomatically
     let next_po2 = 32;
-    let padding = (0..(next_po2 - useful_size)).flat_map(|_| (0 as u32).to_le_bytes().to_vec()).collect::<Vec<u8>>();
-    log!("padding len {:?}", padding.len() / 4);
+
+    let padding = (0..(next_po2 - useful_size))
+        .flat_map(|_| (0 as u32).to_le_bytes().to_vec())
+        .collect::<Vec<u8>>();
     let spec = TextureSpec::pixel(ColorFormat(GL::RGBA), [next_po2, 2]);
 
-    let mut line1 = arr 
+    let mut line1 = arr
         .iter()
         .flat_map(|ar| {
             [ar[0], ar[1]]
@@ -117,7 +76,7 @@ pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 9]) -> Result<UploadedTexture, St
         .collect::<Vec<u8>>();
     line1.extend(&padding);
 
-    let line2 = arr 
+    let line2 = arr
         .iter()
         .flat_map(|ar| {
             [ar[2], ar[3]]
@@ -134,15 +93,15 @@ pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 9]) -> Result<UploadedTexture, St
 }
 
 pub const PATTERNS: [[CellType; 4]; 9] = [
-    [Sand, Empty, Empty, Empty], // i = 0
-    [Sand, Sand, Sand, Empty],  // i = 2
-    [Sand, Sand, Empty, Empty], // i = 4
-    [Empty, Sand, Sand, Empty], // i = 6
-    [Empty, Sand, Empty, Empty], // i = 8
-    [Sand, Sand, Empty, Sand], // i != 10
-    [Sand, Empty, Empty, Sand], // i != 12
-    [Sand, Empty, Sand, Empty], // i != 14
-    [Empty, Sand, Empty, Sand], // i == 16
+    [Sand, Empty, Empty, Empty],
+    [Sand, Sand, Sand, Empty],
+    [Sand, Sand, Empty, Empty],
+    [Empty, Sand, Sand, Empty],
+    [Empty, Sand, Empty, Empty],
+    [Sand, Sand, Empty, Sand],
+    [Sand, Empty, Empty, Sand],
+    [Sand, Empty, Sand, Empty],
+    [Empty, Sand, Empty, Sand],
 ];
 
 pub const RULES: [[CellType; 4]; 9] = [
@@ -192,9 +151,14 @@ fn grid_idx(i: usize, j: usize, time_step: u32) -> u8 {
 
 #[cfg(test)]
 impl Field {
+    pub fn get_idx(&self, row: usize, col: usize) -> usize {
+        row * self.width + col
+    }
+
     fn height(&self) -> usize {
         self.height - 1
     }
+
     fn encodde_neighborhood(&self, gid: u8, row: usize, col: usize) -> [CellType; 4] {
         let (r, c) = (row as i32, col as i32);
         match gid {
@@ -277,7 +241,7 @@ impl Field {
 }
 
 #[cfg(test)]
-use std::{fmt, collections::HashMap, hash::Hash};
+use std::{collections::HashMap, fmt, hash::Hash};
 
 #[cfg(test)]
 impl fmt::Display for Field {
@@ -307,6 +271,14 @@ impl fmt::Display for Field {
     }
 }
 
+#[cfg(test)]
+fn get_xy(w: usize, h: usize, idx: usize) -> (f32, f32) {
+    let row = idx / w;
+    let col = idx % w;
+
+    (row as f32 / h as f32, col as f32 / w as f32)
+}
+
 #[test]
 fn test_grid_idx() {
     for i in 0..10 {
@@ -331,7 +303,17 @@ fn test_rules_invariant() {
 fn test_encode_nh() {
     use CellType::*;
 
-    let field = Field::new(32, 32);
+    let field = Field::new(32, 32, |idx| {
+        let (x, y) = get_xy(32, 32, idx);
+
+        let rad = (x - 0.5).powf(2.) + (y - 0.5).powf(2.);
+        if rad <= (0.3 as f32).powf(2.0) && rad >= (0.2 as f32).powf(2.0) {
+            CellType::Sand
+        } else {
+            CellType::Empty
+        }
+    });
+
     let row = 0;
     let col = 0;
     let gid = grid_idx(row, col, 0);
@@ -349,7 +331,7 @@ fn test_encode_nh_small_field() {
     let row = 0;
     let col = 0;
 
-    let mut field = Field::new_empty(2, 3, Sand);
+    let mut field = Field::new(2, 3, |_| Sand);
 
     field.togglerc(row, col);
     field.togglerc(row + 1, col + 1);
@@ -365,7 +347,7 @@ fn test_encode_nh_small_field() {
 fn test_step() {
     use CellType::*;
 
-    let mut field = Field::new_empty(4, 5, Empty);
+    let mut field = Field::new(4, 5, |_| Empty);
 
     field.togglerc(1, 1);
     field.togglerc(2, 2);

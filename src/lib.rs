@@ -1,8 +1,4 @@
 use field::CellType;
-use gl::GL;
-use gl::Ctx;
-use gl::Pipeline;
-use gl::Program;
 use gl::attributes::AttributeVector2;
 use gl::mesh::Mesh;
 use gl::texture::ColorFormat;
@@ -13,36 +9,29 @@ use gl::texture::InternalFormat;
 use gl::texture::TextureSpec;
 use gl::texture::UploadedTexture;
 use gl::texture::Viewport;
+use gl::Ctx;
+use gl::Pipeline;
+use gl::Program;
+use gl::GL;
 use wasm_bindgen::prelude::*;
 
 use std::collections::HashMap;
 
 use glsmrs as gl;
 
+use crate::field::texture;
 use crate::field::PATTERNS;
 use crate::field::RULES;
-use crate::field::texture;
 
 mod field;
 
 pub fn make_quad() -> ([[f32; 2]; 4], [[f32; 2]; 4], [u16; 6]) {
-    let vertices: [[f32; 2]; 4] = [
-        [-1.0, -1.0],
-        [1.0, -1.0],
-        [1.0, 1.0],
-        [-1.0, 1.0]
-    ];
-    let uvs: [[f32; 2]; 4] = [
-        [0.0, 0.0],
-        [1.0, 0.0],
-        [1.0, 1.0],
-        [0.0, 1.0],
-    ];
+    let vertices: [[f32; 2]; 4] = [[-1.0, -1.0], [1.0, -1.0], [1.0, 1.0], [-1.0, 1.0]];
+    let uvs: [[f32; 2]; 4] = [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]];
     let indices: [u16; 6] = [0, 1, 2, 2, 3, 0];
 
     (vertices, uvs, indices)
 }
-
 
 macro_rules! log {
     ( $( $t:tt )* ) => {
@@ -55,7 +44,8 @@ pub fn display_shader(ctx: &Ctx) -> Result<gl::Program, JsValue> {
         ctx,
         include_str!("../shaders/dummy.vert"),
         include_str!("../shaders/display.frag"),
-    ).map_err(|e| JsValue::from(e)) 
+    )
+    .map_err(|e| JsValue::from(e))
 }
 
 pub fn copy_shader(ctx: &Ctx) -> Result<gl::Program, JsValue> {
@@ -63,7 +53,8 @@ pub fn copy_shader(ctx: &Ctx) -> Result<gl::Program, JsValue> {
         &ctx,
         include_str!("../shaders/dummy.vert"),
         include_str!("../shaders/copy.frag"),
-    ).map_err(|e| JsValue::from(e))
+    )
+    .map_err(|e| JsValue::from(e))
 }
 
 pub fn update_shader(ctx: &Ctx) -> Result<gl::Program, JsValue> {
@@ -71,12 +62,11 @@ pub fn update_shader(ctx: &Ctx) -> Result<gl::Program, JsValue> {
         ctx,
         include_str!("../shaders/dummy.vert"),
         include_str!("../shaders/compute.frag"),
-    ).map_err(|e| JsValue::from(e))
+    )
+    .map_err(|e| JsValue::from(e))
 }
 
-pub fn initial_state(
-    ctx: &Ctx
-) -> Result<Mesh, String> {
+pub fn initial_state(ctx: &Ctx) -> Result<Mesh, String> {
     let (vertices, uvs, indices) = make_quad();
 
     Mesh::new(ctx, &indices)?
@@ -95,7 +85,12 @@ pub struct BrushStroke {
 #[wasm_bindgen]
 impl BrushStroke {
     pub fn new(x: f32, y: f32, color: CellType, radius: f32) -> Self {
-        Self { x, y, color, radius }
+        Self {
+            x,
+            y,
+            color,
+            radius,
+        }
     }
 
     pub fn move_to(&mut self, x: f32, y: f32) {
@@ -114,10 +109,14 @@ impl BrushStroke {
 
 impl Default for BrushStroke {
     fn default() -> Self {
-        Self { x: 0., y: 0., color: CellType::Empty, radius: 0. }
+        Self {
+            x: 0.,
+            y: 0.,
+            color: CellType::Empty,
+            radius: 0.,
+        }
     }
 }
-
 
 #[wasm_bindgen]
 pub struct Render {
@@ -144,7 +143,7 @@ impl Render {
             .ok_or(format!("unable to find canvas {}", canvas_name))?;
         let ctx = Ctx::new(gl::util::get_ctx_from_canvas(&canvas, "webgl")?)?;
 
-        let empty_bytes = field::Field::new_empty(w as usize, h as usize, CellType::Empty);
+        let empty_bytes = field::Field::new(w as usize, h as usize, |_| CellType::Empty);
 
         let mesh = initial_state(&ctx)?;
 
@@ -152,10 +151,8 @@ impl Render {
         let copy_shader = copy_shader(&ctx)?;
         let update_shader = update_shader(&ctx)?;
 
-        let display_fb = EmptyFramebuffer::new(
-            &ctx,
-            Viewport::new(canvas.width(), canvas.height())
-        );
+        let display_fb =
+            EmptyFramebuffer::new(&ctx, Viewport::new(canvas.width(), canvas.height()));
 
         let vp = Viewport::new(w, h);
 
@@ -171,7 +168,7 @@ impl Render {
 
         let pipeline = Pipeline::new(&ctx);
 
-        Ok(Self { 
+        Ok(Self {
             pipeline,
             mesh,
             brush: BrushStroke::default(),
@@ -202,29 +199,58 @@ impl Render {
     pub fn frame(&mut self, time_step: f32) -> Result<(), String> {
         let uniforms = vec![
             ("num_rules", gl::UniformData::Scalar(RULES.len() as f32)),
-            ("patterns", gl::UniformData::Texture(&mut self.patterns_texture)),
+            (
+                "patterns",
+                gl::UniformData::Texture(&mut self.patterns_texture),
+            ),
             ("rules", gl::UniformData::Texture(&mut self.rules_texture)),
-            ("position", gl::UniformData::Vector2([self.brush.x, self.brush.y])),
+            (
+                "position",
+                gl::UniformData::Vector2([self.brush.x, self.brush.y]),
+            ),
             ("color", gl::UniformData::Scalar(self.brush.color.into())),
             ("radius", gl::UniformData::Scalar(self.brush.radius)),
             ("field", gl::UniformData::Texture(self.temp_fb.color_slot())),
             ("field_size", gl::UniformData::Vector2(self.dimensions)),
             ("time_step", gl::UniformData::Scalar(time_step)),
-        ].into_iter().collect::<HashMap<_, _>>();
+        ]
+        .into_iter()
+        .collect::<HashMap<_, _>>();
 
-        self.pipeline.shade(&self.update_shader, uniforms, vec![&mut self.mesh], &mut self.state_fb)?;
+        self.pipeline.shade(
+            &self.update_shader,
+            uniforms,
+            vec![&mut self.mesh],
+            &mut self.state_fb,
+        )?;
 
-        let copy_uniforms = vec![
-             ("field", gl::UniformData::Texture(self.state_fb.color_slot())),
-        ].into_iter().collect::<HashMap<_, _>>();
+        let copy_uniforms = vec![(
+            "field",
+            gl::UniformData::Texture(self.state_fb.color_slot()),
+        )]
+        .into_iter()
+        .collect::<HashMap<_, _>>();
 
-        self.pipeline.shade(&self.copy_shader, copy_uniforms, vec![&mut self.mesh], &mut self.temp_fb)?;
+        self.pipeline.shade(
+            &self.copy_shader,
+            copy_uniforms,
+            vec![&mut self.mesh],
+            &mut self.temp_fb,
+        )?;
 
-        let display_uniforms = vec![
-             ("field", gl::UniformData::Texture(self.state_fb.color_slot())),
-        ].into_iter().collect::<HashMap<_, _>>();
+        let display_uniforms = vec![(
+            "field",
+            gl::UniformData::Texture(self.state_fb.color_slot()),
+        )]
+        .into_iter()
+        .collect::<HashMap<_, _>>();
 
-        self.pipeline.shade(&self.display_shader, display_uniforms, vec![&mut self.mesh], &mut self.display_fb)?;
+        self.pipeline.shade(
+            &self.display_shader,
+            display_uniforms,
+            vec![&mut self.mesh],
+            &mut self.display_fb,
+        )?;
 
         Ok(())
     }
