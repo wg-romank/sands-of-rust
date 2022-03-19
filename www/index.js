@@ -64,6 +64,8 @@ document.addEventListener('keydown', ev => {
     r.brush_change_color(sor.CellType.Sand)
   } else if (ev.key == "2") {
     r.brush_change_color(sor.CellType.Empty)
+  } else if (ev.key == "3") {
+    r.brush_change_color(sor.CellType.Wall)
   }
 })
 
