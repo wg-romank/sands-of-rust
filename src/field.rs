@@ -42,11 +42,11 @@ impl Field {
     }
 
     pub fn bytes(&self) -> Vec<u8> {
-        let padding = (0..self.width).flat_map(|_| (CellType::Wall as u32).to_le_bytes().to_vec());
+        let padding = (0..self.width).flat_map(|_| (CellType::Wall as u32).to_le_bytes());
         let bytes = self
             .values
             .iter()
-            .flat_map(|e: &CellType| (*e as u32).to_le_bytes().to_vec());
+            .flat_map(|e: &CellType| (*e as u32).to_le_bytes());
 
         padding.chain(bytes).collect()
     }
@@ -56,12 +56,12 @@ use glsmrs::GL;
 use CellType::*;
 
 pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 9]) -> Result<UploadedTexture, String> {
-    let useful_size = arr.len() as u32;
+    let useful_size = 2 * 9;
     // todo: compute atuomatically
     let next_po2 = 32;
 
     let padding = (0..(next_po2 - useful_size))
-        .flat_map(|_| (0 as u32).to_le_bytes().to_vec())
+        .flat_map(|_| 0_u32.to_le_bytes())
         .collect::<Vec<u8>>();
     let spec = TextureSpec::pixel(ColorFormat(GL::RGBA), [next_po2, 2]);
 
@@ -70,7 +70,7 @@ pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 9]) -> Result<UploadedTexture, St
         .flat_map(|ar| {
             [ar[0], ar[1]]
                 .iter()
-                .flat_map(|e| (*e as u32).to_le_bytes().to_vec())
+                .flat_map(|e| (*e as u32).to_le_bytes())
                 .collect::<Vec<u8>>()
         })
         .collect::<Vec<u8>>();
@@ -81,7 +81,7 @@ pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 9]) -> Result<UploadedTexture, St
         .flat_map(|ar| {
             [ar[2], ar[3]]
                 .iter()
-                .flat_map(|e| (*e as u32).to_le_bytes().to_vec())
+                .flat_map(|e| (*e as u32).to_le_bytes())
                 .collect::<Vec<u8>>()
         })
         .collect::<Vec<u8>>();
@@ -89,7 +89,7 @@ pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 9]) -> Result<UploadedTexture, St
     line1.extend(line2);
     line1.extend(&padding);
 
-    spec.upload_u8(&ctx, &line1)
+    spec.upload_u8(ctx, &line1)
 }
 
 pub const PATTERNS: [[CellType; 4]; 9] = [
@@ -231,7 +231,7 @@ impl Field {
             let shifted = rules(nh);
 
             if shifted != nh {
-                print!("gid={} ({},{}) {:?} -> {:?}\n", gid, row, col, nh, shifted);
+                println!("gid={} ({},{}) {:?} -> {:?}", gid, row, col, nh, shifted);
             }
 
             new_values[idx] = shifted[(gid - 1) as usize];
@@ -250,7 +250,7 @@ impl fmt::Display for Field {
         for i in 0..self.height() {
             write!(f, "{}", i)?;
         }
-        writeln!(f, "")?;
+        writeln!(f)?;
 
         for i in 0..self.width {
             write!(f, "{}", i)?;
@@ -264,7 +264,7 @@ impl fmt::Display for Field {
                     write!(f, "x")?;
                 };
             }
-            writeln!(f, "")?;
+            writeln!(f)?;
         }
 
         Ok(())
@@ -352,13 +352,13 @@ fn test_step() {
     field.togglerc(1, 1);
     field.togglerc(2, 2);
 
-    print!("field\n{}", field);
+    println!("field{}", field);
 
-    print!("nh (1, 1) {:?}\n", field.encodde_neighborhood(1, 1, 1));
+    println!("nh (1, 1) {:?}", field.encodde_neighborhood(1, 1, 1));
 
     field.step(1);
 
-    print!("field\n{}", field);
+    println!("field{}", field);
 
     assert_eq!(
         field.encodde_neighborhood(1, 1, 1),

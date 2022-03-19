@@ -45,16 +45,16 @@ pub fn display_shader(ctx: &Ctx) -> Result<gl::Program, JsValue> {
         include_str!("../shaders/dummy.vert"),
         include_str!("../shaders/display.frag"),
     )
-    .map_err(|e| JsValue::from(e))
+    .map_err(JsValue::from)
 }
 
 pub fn copy_shader(ctx: &Ctx) -> Result<gl::Program, JsValue> {
     gl::Program::new(
-        &ctx,
+        ctx,
         include_str!("../shaders/dummy.vert"),
         include_str!("../shaders/copy.frag"),
     )
-    .map_err(|e| JsValue::from(e))
+    .map_err(JsValue::from)
 }
 
 pub fn update_shader(ctx: &Ctx) -> Result<gl::Program, JsValue> {
@@ -63,7 +63,7 @@ pub fn update_shader(ctx: &Ctx) -> Result<gl::Program, JsValue> {
         include_str!("../shaders/dummy.vert"),
         include_str!("../shaders/compute.frag"),
     )
-    .map_err(|e| JsValue::from(e))
+    .map_err(JsValue::from)
 }
 
 pub fn initial_state(ctx: &Ctx) -> Result<Mesh, String> {
@@ -82,7 +82,6 @@ pub struct BrushStroke {
     radius: f32,
 }
 
-#[wasm_bindgen]
 impl BrushStroke {
     pub fn new(x: f32, y: f32, color: CellType, radius: f32) -> Self {
         Self {
@@ -161,7 +160,7 @@ impl Render {
 
         let texture_spec = TextureSpec::pixel(ColorFormat(GL::RGBA), [w, h]);
         let state_texture = texture_spec.upload(&ctx, InternalFormat(GL::UNSIGNED_BYTE), None)?;
-        let state_fb = EmptyFramebuffer::new(&ctx, vp.clone()).with_color_slot(state_texture)?;
+        let state_fb = EmptyFramebuffer::new(&ctx, vp).with_color_slot(state_texture)?;
 
         let temp_fb = texture_spec.upload_u8(&ctx, &empty_bytes.bytes())?;
         let temp_fb = EmptyFramebuffer::new(&ctx, vp).with_color_slot(temp_fb)?;
