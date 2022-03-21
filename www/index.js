@@ -2,13 +2,15 @@ import * as sor from "sands-of-rust";
 
 const canvas = document.getElementById("sands-of-rust-canvas");
 const brect = canvas.getBoundingClientRect();
-const w = 512;
-const h = 512;
-
 canvas.setAttribute('width', brect.width);
 canvas.setAttribute('height', brect.height);
 
-let r = sor.Render.new("sands-of-rust-canvas", w, h);
+const cellsPerInch = 100;
+const ppi = window.devicePixelRatio * 96;
+const mWidth = Math.floor(brect.width / ppi * cellsPerInch);
+const mHeight = Math.floor(brect.height / ppi * cellsPerInch)
+
+let r = sor.Render.new("sands-of-rust-canvas", mWidth, mHeight);
 
 let lastCall = 0;
 let cum = 0;
@@ -49,7 +51,7 @@ canvas.addEventListener('pointermove', ev => {
     const canvasTop = 1 - (ev.clientY - boundingRect.top) / boundingRect.height;
 
     r.brush_move_to(canvasLeft, canvasTop);
-    r.brush_change_radius(2);
+    r.brush_change_radius(10);
   }
 });
 
@@ -57,6 +59,14 @@ canvas.addEventListener('pointerup', ev => {
   isDown = false;
   r.brush_change_radius(0);
 });
+
+// let color_picker = document.getElementById("brush-selector")
+// for (let item in Object.keys(sor.CellType)) {
+//   // color_picker.appendChild();
+//   console.log("ite ", item);
+//   console.log("v ", sor.CellType[item]);
+//   console.log("bt ", item, sor.color_hex(item));
+// }
 
 document.addEventListener('keydown', ev => {
   console.log("Key down ", ev);

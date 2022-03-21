@@ -5,9 +5,15 @@ uniform sampler2D color_texture;
 
 varying vec2 frag_uv;
 
+float rand(vec2 co){
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
 vec4 cell_color(vec4 pixel) {
     vec2 color_uv = vec2(pixel.r, 0);
-    return texture2D(color_texture, color_uv);
+    vec4 color = texture2D(color_texture, color_uv);
+    float scale = mix(0.7, 0.9, rand(frag_uv));
+    return vec4(scale * color.rgb, 1.);
 }
 
 void main() {
