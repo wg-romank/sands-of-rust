@@ -158,15 +158,15 @@ vec4 gravityBlackMagic(mat4 nh, int gid) {
   // 3 4
   // unable to use uniform in loop comparison
 
-  for (float i = 0.; i < 100.; i += 2.) {
+  for (float i = 0.; i < 64.; i += 2.) {
     if (i >= 2. * num_rules) {
       break;
     }
     // https://stackoverflow.com/a/60620232
-    vec2 off1 = (vec2(0.5, 0.5) + vec2(i, 0)) / vec2(32, 2);
-    vec2 off2 = (vec2(1.5, 0.5) + vec2(i, 0)) / vec2(32, 2);
-    vec2 off3 = (vec2(0.5, 1.5) + vec2(i, 0)) / vec2(32, 2);
-    vec2 off4 = (vec2(1.5, 1.5) + vec2(i, 0)) / vec2(32, 2);
+    vec2 off1 = (vec2(0.5, 0.5) + vec2(i, 0)) / vec2(64, 2);
+    vec2 off2 = (vec2(1.5, 0.5) + vec2(i, 0)) / vec2(64, 2);
+    vec2 off3 = (vec2(0.5, 1.5) + vec2(i, 0)) / vec2(64, 2);
+    vec2 off4 = (vec2(1.5, 1.5) + vec2(i, 0)) / vec2(64, 2);
   
     mat4 pattern = mat4(
       texture2D(patterns, off1),

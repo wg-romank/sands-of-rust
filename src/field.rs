@@ -85,10 +85,10 @@ impl Field {
 use glsmrs::GL;
 use CellType::*;
 
-pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 9]) -> Result<UploadedTexture, String> {
-    let useful_size = 2 * 9;
+pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 17]) -> Result<UploadedTexture, String> {
+    let useful_size = 2 * 17;
     // todo: compute atuomatically
-    let next_po2 = 32;
+    let next_po2 = 64;
 
     let padding = (0..(next_po2 - useful_size))
         .map(|_| [0., 0., 0., 0.])
@@ -122,7 +122,7 @@ pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 9]) -> Result<UploadedTexture, St
     spec.upload_rgba(ctx, &line1)
 }
 
-pub const PATTERNS: [[CellType; 4]; 9] = [
+pub const PATTERNS: [[CellType; 4]; 17] = [
     [Sand, Empty, Empty, Empty],
     [Sand, Sand, Sand, Empty],
     [Sand, Sand, Empty, Empty],
@@ -132,9 +132,17 @@ pub const PATTERNS: [[CellType; 4]; 9] = [
     [Sand, Empty, Empty, Sand],
     [Sand, Empty, Sand, Empty],
     [Empty, Sand, Empty, Sand],
+    [Sand, Wall, Empty, Empty],
+    [Wall, Sand, Empty, Empty],
+    [Sand, Wall, Empty, Wall],
+    [Wall, Sand, Wall, Empty],
+    [Sand, Empty, Empty, Wall],
+    [Empty, Sand, Wall, Empty],
+    [Sand, Empty, Wall, Empty],
+    [Empty, Sand, Empty, Wall],
 ];
 
-pub const RULES: [[CellType; 4]; 9] = [
+pub const RULES: [[CellType; 4]; 17] = [
     [Empty, Empty, Sand, Empty],
     [Sand, Empty, Sand, Sand],
     [Empty, Empty, Sand, Sand],
@@ -144,6 +152,14 @@ pub const RULES: [[CellType; 4]; 9] = [
     [Empty, Empty, Sand, Sand],
     [Empty, Empty, Sand, Sand],
     [Empty, Empty, Sand, Sand],
+    [Empty, Wall, Sand, Empty],
+    [Wall, Empty, Empty, Sand],
+    [Empty, Wall, Sand, Wall],
+    [Wall, Empty, Wall, Sand],
+    [Empty, Empty, Sand, Wall],
+    [Empty, Empty, Wall, Sand],
+    [Empty, Empty, Wall, Sand],
+    [Empty, Empty, Sand, Wall],
 ];
 
 #[cfg(test)]
