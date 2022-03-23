@@ -66,7 +66,7 @@ int gridIndex(vec2 coord) {
 // Reference: Cellular Gravity Tromp, Gruau
 int timedGridIndex(vec2 coord, float time_step) {
   int idx = gridIndex(coord);
-  int time_step_int = int(mod(time_step, 2.));
+  int time_step_int = int(mod(time_step, 4.));
 
   if (time_step_int == 0) {
     return idx;
@@ -83,6 +83,34 @@ int timedGridIndex(vec2 coord, float time_step) {
       return 2;
     } else if (idx == 4) {
       return 1;
+    }
+  } else if (time_step_int == 2) {
+    // 1 -> 3
+    // 2 -> 4
+    // 3 -> 1
+    // 4 -> 2
+    if (idx == 1) {
+      return 3;
+    } else if (idx == 2) {
+      return 4;
+    } else if (idx == 3) {
+      return 1;
+    } else if (idx == 4) {
+      return 2;
+    }
+  } else if (time_step_int == 3) {
+    // 1 -> 2
+    // 2 -> 1
+    // 3 -> 4
+    // 4 -> 3
+    if (idx == 1) {
+      return 2;
+    } else if (idx == 2) {
+      return 1;
+    } else if (idx == 3) {
+      return 4;
+    } else if (idx == 4) {
+      return 3;
     }
   }
   return -1;
