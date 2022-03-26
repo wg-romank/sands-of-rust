@@ -1,55 +1,7 @@
-use glsmrs::{
-    texture::{ColorFormat, TextureSpec, UploadedTexture},
-    Ctx,
-};
-use wasm_bindgen::prelude::*;
+#[cfg(test)]
+use crate::rules::Rules;
 
-use hex_color::HexColor;
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
-
-#[wasm_bindgen]
-#[derive(Hash, Eq, PartialEq, Clone, Copy, Debug, EnumIter)]
-pub enum CellType {
-    Empty,
-    Water,
-    Sand,
-    Wall,
-}
-
-#[wasm_bindgen]
-pub fn color_hex(cell: CellType) -> String {
-    let color = cell.color();
-    HexColor::new(
-        (color[0] * 255.) as u8,
-        (color[1] * 255.) as u8,
-        (color[2] * 255.) as u8,
-    )
-    .to_string()
-}
-
-impl CellType {
-    pub fn pack_rgba(&self) -> [f32; 4] {
-        let idx = Self::iter().take_while(|c| c != self).count() as f32;
-        [(idx + 0.5) / Self::iter().len() as f32, 0., 0., 0.]
-    }
-
-    fn color(self) -> [f32; 4] {
-        use CellType::*;
-        match self {
-            Empty => [0., 0., 0., 1.],
-            Sand => [168. / 255., 134. / 255., 42. / 255., 1.],
-            Water => [103. / 255., 133. / 255., 193. / 255., 1.],
-            Wall => [148. / 255., 148. / 255., 148. / 255., 1.],
-        }
-    }
-
-    pub fn color_texture_bytes(ctx: &Ctx) -> Result<UploadedTexture, String> {
-        let tex = TextureSpec::pixel(ColorFormat(GL::RGBA), [Self::iter().len() as u32, 1]);
-        let bytes = Self::iter().map(Self::color).collect::<Vec<[f32; 4]>>();
-        tex.upload_rgba(ctx, &bytes)
-    }
-}
+use crate::cell::CellType;
 
 pub struct Field {
     pub width: usize,
@@ -82,94 +34,7 @@ impl Field {
     }
 }
 
-use glsmrs::GL;
-use CellType::*;
 
-pub fn texture(ctx: &Ctx, arr: [[CellType; 4]; 17]) -> Result<UploadedTexture, String> {
-    let useful_size = 2 * 17;
-    // todo: compute atuomatically
-    let next_po2 = 64;
-
-    let padding = (0..(next_po2 - useful_size))
-        .map(|_| [0., 0., 0., 0.])
-        .collect::<Vec<[f32; 4]>>();
-    let spec = TextureSpec::pixel(ColorFormat(GL::RGBA), [next_po2, 2]);
-
-    let mut line1 = arr
-        .iter()
-        .flat_map(|ar| {
-            [ar[0], ar[1]]
-                .iter()
-                .map(CellType::pack_rgba)
-                .collect::<Vec<[f32; 4]>>()
-        })
-        .collect::<Vec<[f32; 4]>>();
-    line1.extend(&padding);
-
-    let line2 = arr
-        .iter()
-        .flat_map(|ar| {
-            [ar[2], ar[3]]
-                .iter()
-                .map(CellType::pack_rgba)
-                .collect::<Vec<[f32; 4]>>()
-        })
-        .collect::<Vec<[f32; 4]>>();
-
-    line1.extend(line2);
-    line1.extend(&padding);
-
-    spec.upload_rgba(ctx, &line1)
-}
-
-pub const PATTERNS: [[CellType; 4]; 17] = [
-    [Sand, Empty, Empty, Empty],
-    [Sand, Sand, Sand, Empty],
-    [Sand, Sand, Empty, Empty],
-    [Empty, Sand, Sand, Empty],
-    [Empty, Sand, Empty, Empty],
-    [Sand, Sand, Empty, Sand],
-    [Sand, Empty, Empty, Sand],
-    [Sand, Empty, Sand, Empty],
-    [Empty, Sand, Empty, Sand],
-    [Sand, Wall, Empty, Empty],
-    [Wall, Sand, Empty, Empty],
-    [Sand, Wall, Empty, Wall],
-    [Wall, Sand, Wall, Empty],
-    [Sand, Empty, Empty, Wall],
-    [Empty, Sand, Wall, Empty],
-    [Sand, Empty, Wall, Empty],
-    [Empty, Sand, Empty, Wall],
-];
-
-pub const RULES: [[CellType; 4]; 17] = [
-    [Empty, Empty, Sand, Empty],
-    [Sand, Empty, Sand, Sand],
-    [Empty, Empty, Sand, Sand],
-    [Empty, Empty, Sand, Sand],
-    [Empty, Empty, Empty, Sand],
-    [Empty, Sand, Sand, Sand],
-    [Empty, Empty, Sand, Sand],
-    [Empty, Empty, Sand, Sand],
-    [Empty, Empty, Sand, Sand],
-    [Empty, Wall, Sand, Empty],
-    [Wall, Empty, Empty, Sand],
-    [Empty, Wall, Sand, Wall],
-    [Wall, Empty, Wall, Sand],
-    [Empty, Empty, Sand, Wall],
-    [Empty, Empty, Wall, Sand],
-    [Empty, Empty, Wall, Sand],
-    [Empty, Empty, Sand, Wall],
-];
-
-#[cfg(test)]
-fn rules(slice: [CellType; 4]) -> [CellType; 4] {
-    let mut r = HashMap::new();
-    for i in 0..PATTERNS.len() {
-        r.insert(PATTERNS[i], RULES[i]);
-    }
-    r.get(&slice).unwrap_or(&slice).clone()
-}
 
 #[cfg(test)]
 fn grid_idx(i: usize, j: usize, time_step: u32) -> u8 {
@@ -258,7 +123,7 @@ impl Field {
         }
     }
 
-    fn step(&mut self, time_step: u32) {
+    fn step(&mut self, time_step: u32, rules: &Rules) {
         let w = self.width;
         let h = self.height();
         let mut new_values = self.values.clone();
@@ -274,7 +139,7 @@ impl Field {
 
             let nh = self.encodde_neighborhood(gid, row, col);
 
-            let shifted = rules(nh);
+            let shifted = rules.rules(nh);
 
             if shifted != nh {
                 println!("gid={} ({},{}) {:?} -> {:?}", gid, row, col, nh, shifted);
@@ -286,12 +151,10 @@ impl Field {
     }
 }
 
-#[cfg(test)]
-use std::{collections::HashMap, fmt, hash::Hash};
 
 #[cfg(test)]
-impl fmt::Display for Field {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for Field {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, " ")?;
         for i in 0..self.height() {
             write!(f, "{}", i)?;
@@ -340,9 +203,10 @@ fn test_grid_idx() {
 #[test]
 fn test_rules_invariant() {
     use CellType::*;
+    let rules = Rules::new();
 
     let invariant = [Sand, Sand, Sand, Sand];
-    assert_eq!(rules(invariant), invariant);
+    assert_eq!(rules.rules(invariant), invariant);
 }
 
 #[test]
@@ -393,6 +257,7 @@ fn test_encode_nh_small_field() {
 fn test_step() {
     use CellType::*;
 
+    let rules = Rules::new();
     let mut field = Field::new(4, 5, |_| Empty);
 
     field.togglerc(1, 1);
@@ -402,7 +267,7 @@ fn test_step() {
 
     println!("nh (1, 1) {:?}", field.encodde_neighborhood(1, 1, 1));
 
-    field.step(1);
+    field.step(1, &rules);
 
     println!("field{}", field);
 
@@ -411,11 +276,3 @@ fn test_step() {
         [Empty, Empty, Sand, Sand]
     )
 }
-
-// #[test]
-// fn understand_conversion() {
-//     use CellType::*;
-
-//     assert_eq!(Water as u32, 20);
-//     assert_eq!(Water as u32 as f32, 20.);
-// }

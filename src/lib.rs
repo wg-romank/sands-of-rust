@@ -1,4 +1,4 @@
-use field::CellType;
+use cell::CellType;
 use gl::attributes::AttributeVector2;
 use gl::mesh::Mesh;
 use gl::texture::ColorFormat;
@@ -19,11 +19,11 @@ use std::collections::HashMap;
 
 use glsmrs as gl;
 
-use crate::field::texture;
-use crate::field::PATTERNS;
-use crate::field::RULES;
+use crate::rules::Rules;
 
+mod rules;
 mod field;
+mod cell;
 
 pub fn make_quad() -> ([[f32; 2]; 4], [[f32; 2]; 4], [u16; 6]) {
     let vertices: [[f32; 2]; 4] = [[-1.0, -1.0], [1.0, -1.0], [1.0, 1.0], [-1.0, 1.0]];
@@ -120,6 +120,7 @@ impl Default for BrushStroke {
 #[wasm_bindgen]
 pub struct Render {
     pipeline: Pipeline,
+    rules: Rules,
     mesh: Mesh,
     brush: BrushStroke,
     display_shader: Program,
@@ -156,8 +157,8 @@ impl Render {
 
         let vp = Viewport::new(w, h);
 
-        let patterns_texture = texture(&ctx, PATTERNS)?;
-        let rules_texture = texture(&ctx, RULES)?;
+        let rules = Rules::new();
+        let (patterns_texture, rules_texture) = rules.to_textures(&ctx)?;
 
         let texture_spec = TextureSpec::pixel(ColorFormat(GL::RGBA), [w, h]);
         let state_texture = texture_spec.upload(&ctx, InternalFormat(GL::FLOAT), None)?;
@@ -173,6 +174,7 @@ impl Render {
         Ok(Self {
             pipeline,
             mesh,
+            rules,
             brush: BrushStroke::default(),
             display_shader,
             copy_shader,
@@ -201,7 +203,7 @@ impl Render {
 
     pub fn frame(&mut self, time_step: f32) -> Result<(), String> {
         let uniforms = vec![
-            ("num_rules", gl::UniformData::Scalar(RULES.len() as f32)),
+            ("num_rules", gl::UniformData::Scalar(self.rules.num_rules())),
             (
                 "patterns",
                 gl::UniformData::Texture(&mut self.patterns_texture),
