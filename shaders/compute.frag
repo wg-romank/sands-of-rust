@@ -16,6 +16,9 @@ uniform float radius;
 
 varying vec2 frag_uv;
 
+// todo: this needs to be adjusted if we have more rules
+const float MAX_RULES_TEXTURE_SIZE = 512.;
+
 vec4 textureOffset(vec2 uv, vec2 offset) {
   return texture2D(field, (uv * field_size + offset) / field_size);
 }
@@ -187,7 +190,7 @@ vec4 gravityBlackMagic(mat4 nh, int gid) {
   // 3 4
   // unable to use uniform in loop comparison
 
-  for (float i = 0.; i < 64.; i += 2.) {
+  for (float i = 0.; i < MAX_RULES_TEXTURE_SIZE; i += 2.) {
     if (i >= 2. * num_rules) {
       break;
     }
