@@ -204,6 +204,7 @@ impl Render {
     pub fn frame(&mut self, time_step: f32) -> Result<(), String> {
         let uniforms = vec![
             ("num_rules", gl::UniformData::Scalar(self.rules.num_rules())),
+            ("rules_texture_size", gl::UniformData::Scalar(self.rules.texture_len())),
             (
                 "patterns",
                 gl::UniformData::Texture(&mut self.patterns_texture),
