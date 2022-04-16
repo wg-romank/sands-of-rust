@@ -15,6 +15,21 @@ const mHeight = Math.floor(brect.height / ppi * cellsPerInch)
 
 let r = sor.Render.new("sands-of-rust-canvas", mWidth, mHeight);
 
+fetch('https://picsum.photos/200/300').then(res => res.blob()).then(r => r.arrayBuffer()).then(r => blobToImage(r))
+
+const blobToImage = (blob) => {
+  return new Promise(resolve => {
+    // const url = URL.createObjectURL(blob)
+    // let img = new Image()
+    // img.onload = () => {
+    //   URL.revokeObjectURL(url)
+    //   resolve(img)
+    // }
+    // img.src = url
+    console.log('img', blob)
+  })
+}
+
 let pan = new ZingTouch.Pan();
 
 activeRegion.bind(canvas, pan, e => {
