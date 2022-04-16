@@ -17,6 +17,8 @@ let r = sor.Render.new("sands-of-rust-canvas", mWidth, mHeight);
 
 let pan = new ZingTouch.Pan();
 
+let update = true;
+
 activeRegion.bind(canvas, pan, e => {
   let ev = e.detail.events[0];
   const boundingRect = canvas.getBoundingClientRect();
@@ -48,12 +50,6 @@ Object.keys(sor.CellType).filter(isNaN).forEach(
     brush.style.border = '1px solid rgb(255, 255, 255)';
     brushContainer.appendChild(brush);
 
-    var label = document.createElement('p');
-    label.innerText = e;
-    label.style.fontSize = '200%';
-    label.style.color = 'rgb(255, 255, 255)';
-    brushContainer.appendChild(label);
-
     brushContainer.addEventListener('pointerup', () => {
       r.brush_change_color(sor.CellType[e]);
       console.log("EE")
@@ -74,7 +70,7 @@ const renderLoop = (timestamp) => {
 
   let fps = 60;
   if (cum > 1000 / fps) {
-    r.frame(timeStep);
+    r.frame(timeStep, update);
     cum = 0;
     timeStep += 1;
   }
