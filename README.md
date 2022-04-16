@@ -2,7 +2,7 @@
 
 Inspired by Sandspiel, Noita and countless other simulations, this repo implements falling sands mechanics. Unlike most of the similar projects it computes updates on GPU using render-to-texture approach. Code is borrowing block-cellular automata rules for sand gravity from Falling Turnip (https://github.com/tranma/falling-turnip) and adopting them to be run as part of WebGL 1.0 shader pipeline for maximum performance and portability.
 
-Traditionally such simulations were limited to modest field area size on the web (such as 100x100 for single-threaded pure JS implementation, or 300x300 for single-threaded WASM implementation). Using block-cellular rules allows for parallel processing, which in term, leveraging massively parallel GPU compute model, makes it possible to render very large simulation field area.
+Traditionally such simulations were limited to modest field area size on the web (such as 100x100 for single-threaded pure JS implementation, or 300x300 for single-threaded WASM implementation). Using block-cellular rules allows for parallel processing, which makes it possible to render very large simulation field area, leveraging massively parallel GPU compute model.
 
 <TODO: img>
 
