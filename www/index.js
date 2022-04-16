@@ -39,7 +39,6 @@ canvas.addEventListener('pointerdown', ev => {
   button = ev.button;
 });
 
-
 canvas.addEventListener('pointermove', ev => {
   if (isDown) {
     const boundingRect = canvas.getBoundingClientRect();
@@ -60,23 +59,33 @@ canvas.addEventListener('pointerup', ev => {
   r.brush_change_radius(0);
 });
 
-// let color_picker = document.getElementById("brush-selector")
-// for (let item in Object.keys(sor.CellType)) {
-//   // color_picker.appendChild();
-//   console.log("ite ", item);
-//   console.log("v ", sor.CellType[item]);
-//   console.log("bt ", item, sor.color_hex(item));
-// }
+let brushSelector = document.getElementById('brush-selector');
 
-document.addEventListener('keydown', ev => {
-  console.log("Key down ", ev);
-  if (ev.key == "1") {
-    r.brush_change_color(sor.CellType.Sand)
-  } else if (ev.key == "2") {
-    r.brush_change_color(sor.CellType.Empty)
-  } else if (ev.key == "3") {
-    r.brush_change_color(sor.CellType.Wall)
+Object.keys(sor.CellType).filter(isNaN).forEach(
+  e =>  {
+    var brushContainer = document.createElement("div");
+    brushContainer.className = 'brush';
+
+    var brush = document.createElement("div");
+    brush.style.backgroundColor = sor.color_hex(sor.CellType[e]);
+    brush.style.width = '60px';
+    brush.style.height = '60px';
+    brush.style.margin = '3px';
+    brush.style.border = '1px solid rgb(255, 255, 255)';
+    brushContainer.appendChild(brush);
+
+    var label = document.createElement('p');
+    label.innerText = e;
+    label.style.color = 'rgb(255, 255, 255)';
+    brushContainer.appendChild(label);
+
+    brushContainer.addEventListener('pointerup', () => {
+      r.brush_change_color(sor.CellType[e]);
+      console.log("EE")
+    })
+
+    brushSelector.appendChild(brushContainer);
   }
-})
+);
 
 requestAnimationFrame(renderLoop);

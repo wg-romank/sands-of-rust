@@ -9,7 +9,7 @@ use strum_macros::EnumIter;
 #[derive(Hash, Eq, PartialEq, Clone, Copy, Debug, EnumIter)]
 pub enum CellType {
     Empty,
-    Water,
+    // Water,
     Sand,
     Wall,
 }
@@ -36,7 +36,7 @@ impl CellType {
         match self {
             Empty => [0., 0., 0., 1.],
             Sand => [168. / 255., 134. / 255., 42. / 255., 1.],
-            Water => [103. / 255., 133. / 255., 193. / 255., 1.],
+            // Water => [103. / 255., 133. / 255., 193. / 255., 1.],
             Wall => [148. / 255., 148. / 255., 148. / 255., 1.],
         }
     }
