@@ -206,35 +206,34 @@ impl Render {
     }
 
     pub fn frame(&mut self, time_step: f32, update: bool) -> Result<(), String> {
-        if update {
-            let uniforms = vec![
-                ("num_rules", gl::UniformData::Scalar(self.rules.num_rules())),
-                ("rules_texture_size", gl::UniformData::Scalar(self.rules.texture_len())),
-                (
-                    "patterns",
-                    gl::UniformData::Texture(&mut self.patterns_texture),
-                ),
-                ("rules", gl::UniformData::Texture(&mut self.rules_texture)),
-                (
-                    "position",
-                    gl::UniformData::Vector2([self.brush.x, self.brush.y]),
-                ),
-                ("color", gl::UniformData::Vector4(self.brush.color.pack_rgba())),
-                ("radius", gl::UniformData::Scalar(self.brush.radius)),
-                ("field", gl::UniformData::Texture(self.temp_fb.color_slot())),
-                ("field_size", gl::UniformData::Vector2(self.dimensions)),
-                ("time_step", gl::UniformData::Scalar(time_step)),
-            ]
-            .into_iter()
-            .collect::<HashMap<_, _>>();
+        let uniforms = vec![
+            ("num_rules", gl::UniformData::Scalar(self.rules.num_rules())),
+            ("rules_texture_size", gl::UniformData::Scalar(self.rules.texture_len())),
+            (
+                "patterns",
+                gl::UniformData::Texture(&mut self.patterns_texture),
+            ),
+            ("rules", gl::UniformData::Texture(&mut self.rules_texture)),
+            (
+                "position",
+                gl::UniformData::Vector2([self.brush.x, self.brush.y]),
+            ),
+            ("color", gl::UniformData::Vector4(self.brush.color.pack_rgba())),
+            ("radius", gl::UniformData::Scalar(self.brush.radius)),
+            ("field", gl::UniformData::Texture(self.temp_fb.color_slot())),
+            ("field_size", gl::UniformData::Vector2(self.dimensions)),
+            ("time_step", gl::UniformData::Scalar(time_step)),
+            ("update", gl::UniformData::Scalar(update as i32 as f32)),
+        ]
+        .into_iter()
+        .collect::<HashMap<_, _>>();
 
-            self.pipeline.shade(
-                &self.update_shader,
-                uniforms,
-                vec![&mut self.mesh],
-                &mut self.state_fb,
-            )?;
-        }
+        self.pipeline.shade(
+            &self.update_shader,
+            uniforms,
+            vec![&mut self.mesh],
+            &mut self.state_fb,
+        )?;
 
         let copy_uniforms = vec![(
             "field",

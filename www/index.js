@@ -17,8 +17,6 @@ let r = sor.Render.new("sands-of-rust-canvas", mWidth, mHeight);
 
 let pan = new ZingTouch.Pan();
 
-let update = true;
-
 activeRegion.bind(canvas, pan, e => {
   let ev = e.detail.events[0];
   const boundingRect = canvas.getBoundingClientRect();
@@ -65,9 +63,28 @@ Object.keys(sor.CellType).filter(isNaN).forEach(
   }
 );
 
+
+let update = true;
 let lastCall = 0;
 let cum = 0;
 let timeStep = 0;
+
+let play = document.getElementById('play');
+play.style.visibility = 'collapse';
+
+let pause = document.getElementById('pause');
+
+play.addEventListener('pointerup', () => {
+  update = true;
+  pause.style.visibility = 'visible';
+  play.style.visibility = 'collapse';
+})
+
+pause.addEventListener('pointerup', () => {
+  update = false;
+  pause.style.visibility = 'collapse';
+  play.style.visibility = 'visible';
+})
 
 const renderLoop = (timestamp) => {
   const delta = timestamp - lastCall;

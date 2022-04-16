@@ -9,6 +9,7 @@ uniform sampler2D rules;
 
 uniform float num_rules;
 uniform float rules_texture_size;
+uniform float update;
 
 uniform vec2 position;
 uniform vec4 color;
@@ -232,6 +233,10 @@ void main() {
   // values passed in texture are scaled from 0 to 1
   // for (int i = 0; i < 10; i = i + 1) {
   // gl_FragColor = nh * vectorId(gid);
-  gl_FragColor = gravityBlackMagic(nh, gid);
+  if (update != 0.0) {
+    gl_FragColor = gravityBlackMagic(nh, gid);
+  } else {
+    gl_FragColor = nh * vectorId(gid);
+  }
   // }
 } 

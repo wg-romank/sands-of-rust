@@ -19,7 +19,7 @@
             }
             canvas {
                 width: 100vw;
-                height: 85vh;
+                height: 90vh;
                 display: block;
             }
             #brush-selector {
@@ -34,11 +34,22 @@
                 align-items: center;
                 justify-content: center;
             }
+            .controls {
+                width: 80px;
+                height: 80px;
+            }
         </style>
     </head>
     <body>
         <canvas id="sands-of-rust-canvas"></canvas>
-        <div id="brush-selector"/>
+        <div id="brush-selector">
+            <svg id="play" class="controls" viewBox="0 0 40 40">
+                <polygon points="5, 5 5,35 35 20" fill="white"/>
+            </svg>
+            <svg id="pause" class="controls" viewBox="0 0 40 40">
+                <polygon points="5,5 5,35 35,35 35,5" fill="white"/>
+            </svg>
+        </div>
         <script src="./bootstrap.js"></script>
     </body>
 </html>
