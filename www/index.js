@@ -37,6 +37,9 @@ pan.end = () => { r.brush_change_radius(0) }
 
 let brushSelector = document.getElementById('brush-selector');
 
+let selected = '5px solid rgb(255, 255, 255)';
+let unselected = '1px solid rgb(255, 255, 255)';
+
 Object.keys(sor.CellType).filter(isNaN).forEach(
   e =>  {
     var brushContainer = document.createElement("div");
@@ -47,12 +50,15 @@ Object.keys(sor.CellType).filter(isNaN).forEach(
     brush.style.width = '80px';
     brush.style.height = '80px';
     brush.style.margin = '3px';
-    brush.style.border = '1px solid rgb(255, 255, 255)';
+    brush.style.border = unselected;
     brushContainer.appendChild(brush);
 
     brushContainer.addEventListener('pointerup', () => {
       r.brush_change_color(sor.CellType[e]);
-      console.log("EE")
+      Array.from(brushSelector.children)
+        .filter(c => c.className == 'brush')
+        .forEach(c => c.children[0].style.border = unselected)
+      brush.style.border = selected
     })
 
     brushSelector.appendChild(brushContainer);

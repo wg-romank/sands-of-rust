@@ -201,6 +201,10 @@ impl Render {
         self.brush.change_color(color);
     }
 
+    pub fn brush_color(&self) -> CellType {
+        self.brush.color
+    }
+
     pub fn frame(&mut self, time_step: f32, update: bool) -> Result<(), String> {
         if update {
             let uniforms = vec![
