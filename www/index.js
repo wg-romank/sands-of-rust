@@ -8,10 +8,11 @@ canvas.setAttribute('height', brect.height);
 
 let activeRegion = ZingTouch.Region(canvas);
 
-const cellsPerInch = 100;
+const cellsPerInch = 50;
 const ppi = window.devicePixelRatio * 96;
 const mWidth = Math.floor(brect.width / ppi * cellsPerInch);
 const mHeight = Math.floor(brect.height / ppi * cellsPerInch)
+const fps = 120;
 
 let r = sor.Render.new("sands-of-rust-canvas", mWidth, mHeight);
 
@@ -106,7 +107,6 @@ const renderLoop = (timestamp) => {
   lastCall = timestamp;
   cum += delta;
 
-  let fps = 60;
   if (cum > 1000 / fps) {
     r.frame(timeStep, update);
     cum = 0;
