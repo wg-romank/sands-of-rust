@@ -29,11 +29,11 @@ Field is packed into another texture and to compute state of next iteration we
 1. Decide what kind of neighboorhood we want to query based on time step `t`
 2. Query relative values for each pixel and pack them into a matrix
 3. Scan rules texture until we find first match with current neighboorhood
-4. Substitute current neighboorhood with values from yet another texture, that contains rule application result at the same offset as original rule.
+4. Substitute current neighboorhood with values from yet another texture, that contains rule application result at the same offset as original rule
 
-Since we compute values per pixel we do some extra work here, but packing whole neighboorhood value would not work directly because of the stepping nature of the grid. Another room for optimization is here.
+Since we compute values per pixel we do some extra work here, but packing whole neighboorhood value would not work directly with stepping grid. Another room for optimization is here.
 
-Render is first rendering from state to new state using render-to-texture method. Resulting state is then rendered with another pass to display, display shader can have it's own handling of state values for presentation.
+Pipeline is first rendering from state to new state using render-to-texture method. Resulting state is then rendered with another pass to display, display shader can have it's own handling of state values for presentation, decoupled from state update logic.
 
 ## Limitations
 
