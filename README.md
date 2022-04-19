@@ -10,15 +10,15 @@ Traditionally such simulations were limited to modest field area size on the web
 
 ## How it works
 
-<img align="left" width="200" src="/docs/rules-illustration.svg">
-
 Classic implementation of falling sands physics (see details in references) applies rules for each cell in sequence. Using block-cellular automata approach we instead use `2 x 2` neighborhoods of each cell to determinte its state on next step.
 
 Here's the example of block rules for particles that behave 'like sand' in traditional simulation. For each of those rules we need to create a companion rule that would be symmetix about the Y-axis. Simulation is built in a way that we create those companion rules automatically so we don't have to spend time manually mirroring each rule.
 
+<img src="/docs/rules-illustration.svg">
+
 Rules are packed into two textures, such that result of rule application is stored on the same offset as pattern of that rule. Storing rules in texture makes querying them straightforward in shader code. Texture size is matched with next power of 2 to ensure texture coordinates behave. Extra space is filled with padding.
 
-<br clear="left"/>
+Rules are packed into a texture, so it makes querying them straightforward in shader code. Texture size is matched with next power of 2 to ensure texture coordinates behave. Extra space is filled with padding.
 
 Rules are applied in a stepping grid where we alternate between odd and even columns and rows, stepping grid could be illustrated in the image below.
 
