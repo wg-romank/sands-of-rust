@@ -8,6 +8,8 @@ Traditionally such simulations were limited to modest field area size on the web
 
 ## How it works
 
+TBD: describe in details
+
 1. Stepping grid and calculating index ids
 2. Encoding rules as texture
 
