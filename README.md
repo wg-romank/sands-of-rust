@@ -5,7 +5,7 @@ Inspired by Sandspiel, Noita and countless other simulations, this repo implemen
 Traditionally such simulations were limited to modest field area size on the web (such as 100x100 for single-threaded pure JS implementation, or 300x300 for single-threaded WASM implementation). Using block-cellular rules allows for parallel processing, which makes it possible to render very large simulation field area, leveraging massively parallel GPU compute model.
 
 <p align="center">
-    <img src="/docs/preview.gif">
+    <img src="/docs/preview.png">
 </p>
 
 ## How it works
