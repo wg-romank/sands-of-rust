@@ -85,21 +85,55 @@ let lastCall = 0;
 let cum = 0;
 let timeStep = 0;
 
-let play = document.getElementById('play');
-play.style.visibility = 'collapse';
+let play_pause = document.getElementById('play-pause');
 
-let pause = document.getElementById('pause');
-
-play.addEventListener('pointerup', () => {
-  update = true;
-  pause.style.visibility = 'visible';
-  play.style.visibility = 'collapse';
+play_pause.addEventListener('pointerup', () => {
+  update = !update;
+  let pp = play_pause.getElementById('pp')
+  if (update) {
+    pp.setAttributeNS(null, 'points', '5,5 5,35 35,35 35,5');
+  } else {
+    pp.setAttributeNS(null, 'points', '5, 5 5,35 35 20');
+  }
 })
 
-pause.addEventListener('pointerup', () => {
-  update = false;
-  pause.style.visibility = 'collapse';
-  play.style.visibility = 'visible';
+let recording = false;
+let mediaRecorder;
+let recordedChunks;
+
+let record = document.getElementById('record');
+record.addEventListener('pointerup', () => {
+  recording = !recording;
+  let cc = record.getElementById('cc')
+
+  if (recording) {
+    const stream = canvas.captureStream(25);
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
+    recordedChunks = [];
+    mediaRecorder.ondataavailable = e => {
+      if (e.data.size > 0) {
+        recordedChunks.push(e.data);
+      }
+    };
+    mediaRecorder.start();
+
+    cc.setAttributeNS(null, 'fill', 'yellow');
+  } else {
+    mediaRecorder.stop();
+    setTimeout(() => {
+      const blob = new Blob(recordedChunks, {
+        type: "video/webm"
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "recording.webm";
+      a.click();
+      URL.revokeObjectURL(url);
+    }, 300);
+
+    cc.setAttributeNS(null, 'fill', 'red');
+  }
 })
 
 const renderLoop = (timestamp) => {
